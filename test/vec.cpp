@@ -7,6 +7,7 @@ auto main() -> int{
   std::cerr << std::setprecision(100);
 
   using namespace gf::math;
+
   {
     test("vec4");
     auto vec = vec4(1, 2, 3, 4);

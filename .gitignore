@@ -1,4 +1,7 @@
 *.exe
 *.cpp
+*.hpp
 !test/*.cpp
+!test/*.hpp
+glm
 Makefile
