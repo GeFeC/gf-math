@@ -872,8 +872,8 @@ auto operator<<(std::ostream& out, const gf::math::vec<T, N, S>& vec)
 template<typename T, std::size_t W, std::size_t H>
 auto operator<<(std::ostream& out, const gf::math::mat<T, W, H>& mat)
 -> std::ostream&{
-  for (int y = 0; y < H; ++y){
-    for (int x = 0; x < W; ++x){
+  for (auto y : gf::math::range(H)){
+    for (auto x : gf::math::range(W)){
       out << mat[x][y] << ' ';
     }
     out << '\n';
