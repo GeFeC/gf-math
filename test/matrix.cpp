@@ -5,6 +5,48 @@
 auto main() -> int{
   namespace m = gf::math;
 
+  {
+    auto mat = m::mat4(1.0);
+    auto vec = m::vec4(1.0, 2.0, 3.0, 4.0);
+    auto x = 1.0;
+
+    mat = mat;
+
+    mat == mat;
+    mat != mat;
+
+    mat + x;
+    x + mat;
+    mat + mat;
+
+    -mat;
+    mat - x;
+    x - mat;
+    mat - mat;
+
+    mat * x;
+    x * mat;
+    mat * mat;
+    mat * vec;
+    vec * mat;
+
+    mat / x;
+    x / mat;
+    mat / mat;
+    mat / vec;
+    vec / mat;
+
+    mat += x;
+    mat += mat;
+
+    mat -= x;
+    mat -= mat;
+
+    mat *= x;
+
+    mat /= x;
+  }
+
   test("matrix");
   {
     const auto mat = m::mat4(1.0);

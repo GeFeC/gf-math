@@ -9,6 +9,45 @@ auto main() -> int{
   using namespace gf::math;
 
   {
+    auto vec = vec4(1.0, 2.0, 3.0, 4.0);
+    auto x = 1.0;
+
+    vec = vec;
+
+    vec == vec;
+    vec != vec;
+
+    vec + x;
+    x + vec;
+    vec + vec;
+
+    -vec;
+    vec - x;
+    x - vec;
+    vec - vec;
+
+    vec * x;
+    x * vec;
+    vec * vec;
+
+    vec / x;
+    x / vec;
+    vec / vec;
+
+    vec += x;
+    vec += vec;
+
+    vec -= x;
+    vec -= vec;
+
+    vec *= x;
+    vec *= vec;
+
+    vec /= x;
+    vec /= vec;
+  }
+
+  {
     test("vec4");
     auto vec = vec4(1, 2, 3, 4);
 
