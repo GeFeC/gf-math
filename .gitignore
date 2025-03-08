@@ -1,4 +1,4 @@
 *.exe
 *.cpp
-!test.cpp
+!test/*.cpp
 Makefile

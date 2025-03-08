@@ -1,5 +1,5 @@
 #define GEFEC_MATH_DEBUG
-#include "math.hpp"
+#include "../math.hpp"
 #include <string>
 #include <iostream>
 #include <iomanip>

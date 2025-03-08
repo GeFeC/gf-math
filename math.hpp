@@ -21,7 +21,7 @@ template<typename T, std::size_t N, bool specialized = true>
 struct vec{
   using array_type = T[N];
 
-  array_type dims;
+  array_type dims{};
 
   constexpr vec() noexcept = default;
 
