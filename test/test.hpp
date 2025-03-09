@@ -15,7 +15,7 @@ inline auto test(const std::string& name){
 
 template<typename T>
 inline auto expect(const std::string& test_name, T value, T expected){
-  if (value != expected){
+  if (expected != value){
     std::cerr << "\nTEST " << test_name << " FAILED!\n";
     std::cerr << "Expected " << expected << ", but got " << value << "\n\n";
     throw std::runtime_error("TEST FAILED!\n");
