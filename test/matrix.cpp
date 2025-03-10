@@ -9,6 +9,8 @@ auto main() -> int{
   
   std::cerr << std::setprecision(100);
 
+  static_assert(sizeof(m::mat<double, 10, 10>) == sizeof(double) * 10 * 10);
+
   {
     auto mat = m::mat4(1.0);
     auto vec = m::vec4(1.0, 2.0, 3.0, 4.0);
@@ -47,7 +49,6 @@ auto main() -> int{
     mat -= mat;
 
     mat *= x;
-
     mat /= x;
   }
 

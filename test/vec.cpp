@@ -8,6 +8,8 @@ auto main() -> int{
 
   using namespace gf::math;
 
+  static_assert(sizeof(vec<double, 10>) == sizeof(double) * 10);
+
   {
     auto vec = vec4(1.0, 2.0, 3.0, 4.0);
     auto mat = mat4(1.0);
