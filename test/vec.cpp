@@ -10,6 +10,7 @@ auto main() -> int{
 
   {
     auto vec = vec4(1.0, 2.0, 3.0, 4.0);
+    auto mat = mat4(1.0);
     auto x = 1.0;
 
     vec = vec;
@@ -45,6 +46,9 @@ auto main() -> int{
 
     vec /= x;
     vec /= vec;
+
+    vec *= mat;
+    vec /= mat;
   }
 
   {
@@ -111,16 +115,23 @@ auto main() -> int{
       2.0, 3.0, 5.0, 7.0, 11.0, 13.0, 17.0, 19.0, 23.0, 29.0
     );
 
+    auto mat = gf::math::mat<double, 10, 10>(1.0);
+
     expect("assign", vec.dims[0], 2.0);
     expect("assign", vec.dims[1], 3.0);
     expect("assign", vec.dims[9], 29.0);
     auto& [a, b, c, d, e, f, g, h, i, j] = vec;
 
     vec = gf::math::vec<double, 10>(11.11);
+    const auto old_vec = vec;
 
     for (int i = 0; i < 10; ++i){
       std::cerr << i + 1 << ".";
       expect("single param ctor", vec.dims[i], 11.11);
     }
+
+    vec *= mat;
+
+    expect("identity 10x10 * vec10", vec, old_vec);
   }
 }

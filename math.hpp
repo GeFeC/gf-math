@@ -117,6 +117,9 @@ inline constexpr auto range(const std::pair<std::size_t, std::size_t>& max) noex
   return range({ 0, 0 }, max);
 }
 
+template<typename T, std::size_t W, std::size_t H, bool S>
+struct mat;
+
 template<typename T, std::size_t N, bool S = true>
 struct vec{
   using array_type = T[N];
@@ -214,6 +217,12 @@ struct vec{
   constexpr auto& operator/=(const T& x) noexcept{
     return (*this) = (*this) / x;
   }
+
+  template<bool matS>
+  constexpr auto operator*=(const mat<T, N, N, matS>& mat) noexcept -> vec&;
+
+  template<bool matS>
+  constexpr auto operator/=(const mat<T, N, N, matS>& mat) noexcept -> vec&;
 };
 
 template<std::size_t I, typename T, std::size_t N>
@@ -302,6 +311,12 @@ struct vec<T, 2>{
   constexpr auto& operator/=(const T& x) noexcept{
     return (*this) = (*this) / x;
   }
+
+  template<bool matS>
+  constexpr auto operator*=(const mat<T, 2, 2, matS>& mat) noexcept -> vec&;
+
+  template<bool matS>
+  constexpr auto operator/=(const mat<T, 2, 2, matS>& mat) noexcept -> vec&;
 };
 
 template<typename T>
@@ -369,6 +384,12 @@ struct vec<T, 3>{
   constexpr auto& operator/=(const T& x) noexcept{
     return (*this) = (*this) / x;
   }
+
+  template<bool matS>
+  constexpr auto operator*=(const mat<T, 3, 3, matS>& mat) noexcept -> vec&;
+
+  template<bool matS>
+  constexpr auto operator/=(const mat<T, 3, 3, matS>& mat) noexcept -> vec&;
 };
 
 template<typename T>
@@ -436,6 +457,13 @@ struct vec<T, 4>{
   constexpr auto& operator/=(const T& x) noexcept{
     return (*this) = (*this) / x;
   }
+
+  template<bool matS>
+  constexpr auto operator*=(const mat<T, 4, 4, matS>& mat) noexcept -> vec&;
+
+  template<bool matS>
+  constexpr auto operator/=(const mat<T, 4, 4, matS>& mat) noexcept -> vec&;
+
 };
 
 template<typename T, std::size_t N, bool S>
@@ -973,6 +1001,54 @@ inline constexpr auto operator/(const vec<T, H, S2>& vec, const mat<T, W, H, S1>
 template<typename T, std::size_t W, std::size_t H, bool S, bool S2>
 inline constexpr auto operator/(const mat<T, W, H, S>& mat, const vec<T, W, S2>& vec) noexcept{
   return mat * (1.0 / vec);
+}
+
+template<typename T, std::size_t N, bool S>
+template<bool S2>
+constexpr auto vec<T, N, S>::operator*=(const mat<T, N, N, S2>& mat) noexcept -> vec&{
+  return (*this) = (*this) * mat;
+}
+
+template<typename T, std::size_t N, bool S>
+template<bool S2>
+constexpr auto vec<T, N, S>::operator/=(const mat<T, N, N, S2>& mat) noexcept -> vec&{
+  return (*this) = (*this) * mat;
+}
+
+template<typename T>
+template<bool S>
+constexpr auto vec<T, 2>::operator*=(const mat<T, 2, 2, S>& mat) noexcept -> vec&{
+  return (*this) = (*this) * mat;
+}
+
+template<typename T>
+template<bool S>
+constexpr auto vec<T, 2>::operator/=(const mat<T, 2, 2, S>& mat) noexcept -> vec&{
+  return (*this) = (*this) * mat;
+}
+
+template<typename T>
+template<bool S>
+constexpr auto vec<T, 3>::operator*=(const mat<T, 3, 3, S>& mat) noexcept -> vec&{
+  return (*this) = (*this) * mat;
+}
+
+template<typename T>
+template<bool S>
+constexpr auto vec<T, 3>::operator/=(const mat<T, 3, 3, S>& mat) noexcept -> vec&{
+  return (*this) = (*this) * mat;
+}
+
+template<typename T>
+template<bool S>
+constexpr auto vec<T, 4>::operator*=(const mat<T, 4, 4, S>& mat) noexcept -> vec&{
+  return (*this) = (*this) * mat;
+}
+
+template<typename T>
+template<bool S>
+constexpr auto vec<T, 4>::operator/=(const mat<T, 4, 4, S>& mat) noexcept -> vec&{
+  return (*this) = (*this) * mat;
 }
 
 using mat2 = mat<double, 2, 2>;
