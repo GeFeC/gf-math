@@ -98,7 +98,7 @@ auto main() -> int{
     expect("vec * scalar", b * -2.0, vec4(-4.0, -6.0, -10.0, -14.0));
     expect("vec * vec", a * b, vec4(2.0 * 0.5, -0.5 * 3.0, 0.0 * 5.0, 0.1 * 7.0));
     expect("scalar / vec", 10.0 / b, vec4(10.0 / 2.0, 10.0 / 3.0, 10.0 / 5.0, 10.0 / 7.0));
-    expect("dot product", gf::math::dot_product(a, b), 0.5 * 2.0 - 0.5 * 3.0 + 7.0 * 0.1);
+    expect("dot product", gf::math::dot(a, b), 0.5 * 2.0 - 0.5 * 3.0 + 7.0 * 0.1);
     vec = vec4(0.5);
     vec += 0.5;
     expect("normalization", vec.normalized(), vec / 2.0);
@@ -112,7 +112,7 @@ auto main() -> int{
   }
 
   {
-    test("vec10");
+    test("vecN");
     auto vec = gf::math::vec<double, 10>(
       2.0, 3.0, 5.0, 7.0, 11.0, 13.0, 17.0, 19.0, 23.0, 29.0
     );
@@ -135,5 +135,14 @@ auto main() -> int{
     vec *= mat;
 
     expect("identity 10x10 * vec10", vec, old_vec);
+  }
+
+  {
+    test("vec3");
+
+    auto vec = vec3(1.0, 2.0, 3.0);
+    auto vec2 = vec3(98.0, 99.0, 100.0);
+
+    expect("cross product", cross(vec, vec2), vec3(-97.0, 194.0, -97.0));
   }
 }

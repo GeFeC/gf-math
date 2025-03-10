@@ -561,10 +561,22 @@ inline constexpr auto operator/(T x, const vec<T, N, S>& v) noexcept{
 }
 
 template<typename T, std::size_t N, bool S>
-inline constexpr auto dot_product(const vec<T, N, S>& v1, const vec<T, N, S>& v2) noexcept{
+inline constexpr auto dot(const vec<T, N, S>& v1, const vec<T, N, S>& v2) noexcept{
   const auto v = v1 * v2;
 
   return std::accumulate(v.dims, v.dims + N, 0.0, std::plus{});
+}
+
+template<typename T, bool S>
+inline constexpr auto cross(const vec<T, 3, S>& v1, const vec<T, 3, S>& v2) noexcept{
+  const auto [a1, a2, a3] = v1;
+  const auto [b1, b2, b3] = v2;
+
+  return vec<T, 3, S>(
+    a2 * b3 - a3 * b2,
+    a3 * b1 - a1 * b3,
+    a1 * b2 - a2 * b1
+  );
 }
 
 template<typename T, std::size_t N, bool S>
