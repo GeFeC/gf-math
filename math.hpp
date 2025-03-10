@@ -241,6 +241,8 @@ struct vec<T, 2>{
   union{
     T dims[2]{};
     struct { T x, y; };
+    struct { T left, right; };
+    struct { T top, bottom; };
   };
 
   constexpr vec() noexcept = default;
