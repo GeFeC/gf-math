@@ -54,6 +54,8 @@ auto main() -> int{
 
   test("matrix");
   {
+    expect("matrix init", m::mat4(), m::mat4(0.0));
+
     const auto mat = m::mat4(1.0);
     const auto mat2 = m::mat4(1.0);
 
@@ -104,7 +106,7 @@ auto main() -> int{
     expect("mat.row(3)", mat.row(3), m::vec4(41.0, 43.0, 47.0, 53.0));
 
     expect("mat.col(0)", mat.col(0), m::vec4(2.0, 11.0, 23.0, 41.0));
-    expect("mat.col(3)", mat.col(3), m::vec4(7.0, 19.0, 37.0, 53));
+    expect("mat.col(3)", mat.col(3), m::vec4(7.0, 19.0, 37.0, 53.0));
   }
 
   {

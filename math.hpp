@@ -11,13 +11,15 @@
 namespace gf::math{
 
 namespace detail{
-  inline static constexpr auto NotSpecialized = false;
 
-  template<typename T, typename... Targs>
-  using all_same = std::enable_if_t<std::conjunction_v<std::is_same<T, Targs>...>>;
+inline static constexpr auto NotSpecialized = false;
 
-  template<typename T>
-  using arithmetic = std::enable_if_t<std::is_arithmetic_v<T>>;
+template<typename T, typename... Targs>
+using all_same = std::enable_if_t<std::conjunction_v<std::is_same<T, Targs>...>>;
+
+template<typename T>
+using arithmetic = std::enable_if_t<std::is_arithmetic_v<T>>;
+
 } //namespace detail
 
 template<typename T>
@@ -97,7 +99,6 @@ struct range_base<std::pair<E, E>>{
   }
 };
 
-
 inline constexpr auto range(std::size_t min, std::size_t max) noexcept{
   return range_base<std::size_t>{ min, max }; 
 }
@@ -117,34 +118,108 @@ inline constexpr auto range(const std::pair<std::size_t, std::size_t>& max) noex
   return range({ 0, 0 }, max);
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S>
+template<typename T, std::size_t W, std::size_t H>
 struct mat;
 
-template<typename T, std::size_t N, bool S = true>
-struct vec{
+template<typename T, std::size_t N>
+struct vec_props{
+  T dims[N];
+
+  constexpr vec_props() noexcept : dims{} {}
+
+  template<typename... Targs>
+  constexpr vec_props(Targs&&... args)
+  : dims{ args... } {}
+
+  constexpr auto& operator[](std::size_t n) noexcept{
+    return dims[n]; 
+  }
+};
+
+template<typename T>
+struct vec_props<T, 2>{
+  union { T x, top, up, left, min; };
+  union { T y, bottom, down, right, max; };
+
+  constexpr vec_props(const T& x, const T& y) : x(x), y(y) {}
+  constexpr vec_props() noexcept : vec_props(T{}, T{}) {}
+
+  constexpr auto& operator[](std::size_t n) noexcept{
+    T* arr[] = { &x, &y };
+    return *(arr[n]);
+  }
+};
+
+template<typename T>
+struct vec_props<T, 3>{
+  union { T x, r; };
+  union { T y, g; };
+  union { T z, b; };
+
+  constexpr vec_props(const T& x, const T& y, const T& z) : x(x), y(y), z(z) {}
+  constexpr vec_props() noexcept : vec_props(T{}, T{}, T{}) {}
+
+  constexpr auto& operator[](std::size_t n) noexcept{
+    T* arr[] = { &x, &y, &z };
+    return *(arr[n]);
+  }
+};
+
+template<typename T>
+struct vec_props<T, 4>{
+  union { T x, r; };
+  union { T y, g; };
+  union { T z, b; };
+  union { T w, a; };
+
+  constexpr vec_props(
+    const T& x, 
+    const T& y, 
+    const T& z,
+    const T& w
+  ) : x(x), y(y), z(z), w(w) {}
+  constexpr vec_props() noexcept : vec_props(T{}, T{}, T{}, T{}) {}
+
+  constexpr auto& operator[](std::size_t n){
+    T* arr[] = { &x, &y, &z, &w };
+    return *(arr[n]);
+  }
+};
+
+template<typename T, std::size_t N> 
+struct vec : vec_props<T, N>{ 
+  using value_type = T;
   using array_type = T[N];
 
-  array_type dims{};
-
-  constexpr vec() noexcept = default;
+  constexpr vec() noexcept{
+    for (auto i : range(N)){
+      (*this)[i] = T{};
+    }
+  }
 
   constexpr vec(T value) noexcept{
-    for (auto& d : dims){
-      d = value;
+    for (auto i : range(N)){
+      (*this)[i] = value;
     }
   }
 
   constexpr vec(const array_type& array) noexcept{
     for (auto i : range(N)){
-      dims[i] = array[i];
+      (*this)[i] = array[i];
     }
   }
 
-  constexpr vec(const vec<T, N>& v) : vec(v.dims) {}
+  constexpr auto& operator[](std::size_t n) noexcept{
+    return vec_props<T, N>::operator[](n);
+  }
+
+  constexpr const auto& operator[](std::size_t n) const noexcept{
+    return const_cast<vec*>(this)->operator[](n);
+  }
 
   template<typename... Targs, typename = detail::all_same<T, Targs...>>
-  constexpr vec(Targs&&... args) noexcept 
-  : dims{ std::forward<Targs>(args)... } {}
+  constexpr vec(const Targs&... args) noexcept 
+  : vec_props<T, N>(args...) {}
 
   template<typename Callable>
   constexpr auto map(Callable callable) const noexcept{
@@ -153,7 +228,7 @@ struct vec{
     auto result = vec<item_type, N>();
 
     for (auto i : range(N)){
-      result.dims[i] = callable(dims[i]);
+      result[i] = callable((*this)[i]);
     }
 
     return result;
@@ -162,7 +237,7 @@ struct vec{
   template<typename Callable>
   constexpr auto every(Callable callable) const noexcept{
     for (auto i : range(N)){
-      if (!callable(dims[i])) return false;
+      if (!callable((*this)[i])) return false;
     }
 
     return true;
@@ -171,7 +246,8 @@ struct vec{
   constexpr auto len_squared() const noexcept{
     auto sum = 0.0;
 
-    for (auto& e : dims){
+    for (auto i : range(N)){
+      const auto& e = (*this)[i];
       sum += e * e;
     }
 
@@ -218,388 +294,133 @@ struct vec{
     return (*this) = (*this) / x;
   }
 
-  template<bool matS>
-  constexpr auto operator*=(const mat<T, N, N, matS>& mat) noexcept -> vec&;
-
-  template<bool matS>
-  constexpr auto operator/=(const mat<T, N, N, matS>& mat) noexcept -> vec&;
-};
-
-template<std::size_t I, typename T, std::size_t N>
-auto get(const vec<T, N>& vec) noexcept{
-  return vec.dims[I];
-}
-
-template<std::size_t I, typename T, std::size_t N>
-auto& get(vec<T, N>& vec) noexcept{
-  return vec.dims[I];
-}
-
-template<std::size_t I, typename T, std::size_t N>
-auto&& get(vec<T, N>&& vec) noexcept{
-  return std::move(vec.dims[I]);
-}
-
-template<std::size_t I, typename T, std::size_t N>
-const auto&& get(const vec<T, N>&& vec) noexcept{
-  return std::move(vec.dims[I]);
-}
-
-template<typename T>
-struct vec<T, 2>{
-  union{
-    T dims[2]{};
-    struct { T x, y; };
-    struct { T left, right; };
-    struct { T top, bottom; };
-  };
-
-  constexpr vec() noexcept = default;
-  constexpr explicit vec(T value) : dims{ value, value } {}
-  constexpr vec(T x, T y) : x(x), y(y) {}
-
-  template<typename Callable>
-  constexpr auto every(Callable callable) const noexcept{
-    return vec<T, 2, detail::NotSpecialized>(dims).every(callable);
-  }
-
-  template<typename Callable>
-  constexpr auto map(Callable callable) const noexcept{
-    return vec<T, 2, detail::NotSpecialized>(dims).map(callable);
-  }
-
-  constexpr auto len_squared() const noexcept{
-    return vec<T, 2, detail::NotSpecialized>(dims).len_squared();
-  }
-
-  constexpr auto len() const noexcept{
-    return vec<T, 2, detail::NotSpecialized>(dims).len();
-  }
-
-  constexpr auto normalized() const noexcept{
-    return vec<T, 2, detail::NotSpecialized>(dims).normalized();
-  }
-
-  constexpr auto& operator+=(const vec& other) noexcept{
-    return (*this) = (*this) + other;
-  }
-
-  constexpr auto& operator+=(const T& x) noexcept{
-    return (*this) = (*this) + x;
-  }
-
-  constexpr auto& operator-=(const vec& other) noexcept{
-    return (*this) = (*this) - other;
-  }
-
-  constexpr auto& operator-=(const T& x) noexcept{
-    return (*this) = (*this) - x;
-  }
-
-  constexpr auto& operator*=(const vec& other) noexcept{
-    return (*this) = (*this) * other;
-  }
-
-  constexpr auto& operator*=(const T& x) noexcept{
-    return (*this) = (*this) * x;
-  }
-
-  constexpr auto& operator/=(const vec& other) noexcept{
-    return (*this) = (*this) / other;
-  }
-
-  constexpr auto& operator/=(const T& x) noexcept{
-    return (*this) = (*this) / x;
-  }
-
-  template<bool matS>
-  constexpr auto operator*=(const mat<T, 2, 2, matS>& mat) noexcept -> vec&;
-
-  template<bool matS>
-  constexpr auto operator/=(const mat<T, 2, 2, matS>& mat) noexcept -> vec&;
+  constexpr auto operator*=(const mat<T, N, N>& mat) noexcept -> vec<T, N>&;
+  constexpr auto operator/=(const mat<T, N, N>& mat) noexcept -> vec<T, N>&;
 };
 
 template<typename T>
-struct vec<T, 3>{
-  union{
-    T dims[3]{};
-    struct { T x, y, z; };
-    struct { T r, g, b; };
-  };
-
-  constexpr vec() noexcept = default;
-  constexpr explicit vec(T value) : dims{ value, value, value } {}
-  constexpr vec(T x, T y, T z) : x(x), y(y), z(z) {}
-
-  template<typename Callable>
-  constexpr auto every(Callable callable) const noexcept{
-    return vec<T, 3, detail::NotSpecialized>(dims).every(callable);
-  }
-
-  template<typename Callable>
-  constexpr auto map(Callable callable) const noexcept{
-    return vec<T, 3, detail::NotSpecialized>(dims).map(callable);
-  }
-
-  constexpr auto len_squared() const noexcept{
-    return vec<T, 3, detail::NotSpecialized>(dims).len_squared();
-  }
-
-  constexpr auto len() const noexcept{
-    return vec<T, 3, detail::NotSpecialized>(dims).len();
-  }
-
-  constexpr auto normalized() const noexcept{
-    return vec<T, 3, detail::NotSpecialized>(dims).normalized();
-  }
-
-  constexpr auto& operator+=(const vec& other) noexcept{
-    return (*this) = (*this) + other;
-  }
-
-  constexpr auto& operator+=(const T& x) noexcept{
-    return (*this) = (*this) + x;
-  }
-
-  constexpr auto& operator-=(const vec& other) noexcept{
-    return (*this) = (*this) - other;
-  }
-
-  constexpr auto& operator-=(const T& x) noexcept{
-    return (*this) = (*this) - x;
-  }
-
-  constexpr auto& operator*=(const vec& other) noexcept{
-    return (*this) = (*this) * other;
-  }
-
-  constexpr auto& operator*=(const T& x) noexcept{
-    return (*this) = (*this) * x;
-  }
-
-  constexpr auto& operator/=(const vec& other) noexcept{
-    return (*this) = (*this) / other;
-  }
-
-  constexpr auto& operator/=(const T& x) noexcept{
-    return (*this) = (*this) / x;
-  }
-
-  template<bool matS>
-  constexpr auto operator*=(const mat<T, 3, 3, matS>& mat) noexcept -> vec&;
-
-  template<bool matS>
-  constexpr auto operator/=(const mat<T, 3, 3, matS>& mat) noexcept -> vec&;
-};
+using pair = vec<T, 2>;
 
 template<typename T>
-struct vec<T, 4>{
-  union{
-    T dims[4]{};
-    struct { T x, y, z, w; };
-    struct { T r, g, b, a; };
-  };
+inline constexpr auto make_pair(const T& t1, const T& t2){
+  return pair<T>(t1, t2);
+}
 
-  constexpr vec() noexcept = default;
-  constexpr explicit vec(T value) : dims{ value, value, value, value } {}
-  constexpr vec(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
 
-  template<typename Callable>
-  constexpr auto map(Callable callable) const noexcept{
-    return vec<T, 4, detail::NotSpecialized>(dims).map(callable);
-  }
-
-  template<typename Callable>
-  constexpr auto every(Callable callable) const noexcept{
-    return vec<T, 4, detail::NotSpecialized>(dims).every(callable);
-  }
-
-  constexpr auto len_squared() const noexcept{
-    return vec<T, 4, detail::NotSpecialized>(dims).len_squared();
-  }
-
-  constexpr auto len() const noexcept{
-    return vec<T, 4, detail::NotSpecialized>(dims).len();
-  }
-
-  constexpr auto normalized() const noexcept{
-    return vec<T, 4, detail::NotSpecialized>(dims).normalized();
-  }
-
-  constexpr auto& operator+=(const vec& other) noexcept{
-    return (*this) = (*this) + other;
-  }
-
-  constexpr auto& operator+=(const T& x) noexcept{
-    return (*this) = (*this) + x;
-  }
-
-  constexpr auto& operator-=(const vec& other) noexcept{
-    return (*this) = (*this) - other;
-  }
-
-  constexpr auto& operator-=(const T& x) noexcept{
-    return (*this) = (*this) - x;
-  }
-
-  constexpr auto& operator*=(const vec& other) noexcept{
-    return (*this) = (*this) * other;
-  }
-
-  constexpr auto& operator*=(const T& x) noexcept{
-    return (*this) = (*this) * x;
-  }
-
-  constexpr auto& operator/=(const vec& other) noexcept{
-    return (*this) = (*this) / other;
-  }
-
-  constexpr auto& operator/=(const T& x) noexcept{
-    return (*this) = (*this) / x;
-  }
-
-  template<bool matS>
-  constexpr auto operator*=(const mat<T, 4, 4, matS>& mat) noexcept -> vec&;
-
-  template<bool matS>
-  constexpr auto operator/=(const mat<T, 4, 4, matS>& mat) noexcept -> vec&;
-
-};
-
-template<typename T, std::size_t N, bool S>
-inline constexpr auto zip(const vec<T, N, S>& v1, const vec<T, N, S>& v2) noexcept{
-  auto result = vec<std::pair<T, T>, N, true>();
+template<typename T, std::size_t N>
+inline constexpr auto zip(const vec<T, N>& v1, const vec<T, N>& v2) noexcept{
+  auto result = vec<std::pair<T, T>, N>();
 
   for (auto i : range(N)){
-    result.dims[i] = std::make_pair(v1.dims[i], v2.dims[i]);
+    result[i] = std::make_pair(v1[i], v2[i]);
   }
 
   return result;
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator-(const vec<T, N, S>& v) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator-(const vec<T, N>& v) noexcept{
   return v.map([&](const auto& e) { return -e; });
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator==(const vec<T, N, S>& lhs, const vec<T, N, S>& rhs) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator==(const vec<T, N>& lhs, const vec<T, N>& rhs) noexcept{
   return zip(lhs, rhs).every([](const auto& p){
     return p.first == p.second;
   });
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator!=(const vec<T, N, S>& lhs, const vec<T, N, S>& rhs) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator!=(const vec<T, N>& lhs, const vec<T, N>& rhs) noexcept{
   return !(lhs == rhs);
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator+(const vec<T, N, S>& lhs, const vec<T, N, S>& rhs) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator+(const vec<T, N>& lhs, const vec<T, N>& rhs) noexcept{
   return zip(lhs, rhs).map([&](const auto& p){
     return p.first + p.second;
   });
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator*(const vec<T, N, S>& lhs, const vec<T, N, S>& rhs) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator*(const vec<T, N>& lhs, const vec<T, N>& rhs) noexcept{
   return zip(lhs, rhs).map([&](const auto& p){
     return p.first * p.second;
   });
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator/(const vec<T, N, S>& lhs, const vec<T, N, S>& rhs) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator/(const vec<T, N>& lhs, const vec<T, N>& rhs) noexcept{
   return lhs * (1.0 / rhs);
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator*(const vec<T, N, S>& v, T x) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator*(const vec<T, N>& v, T x) noexcept{
   return v.map([&](const auto& e){ return e * x; });
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator-(const vec<T, N, S>& lhs, const vec<T, N, S>& rhs) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator-(const vec<T, N>& lhs, const vec<T, N>& rhs) noexcept{
   return lhs + (-rhs);
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator+(const vec<T, N, S>& v, T x) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator+(const vec<T, N>& v, T x) noexcept{
   return v + vec<T, N>(x);
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator+(T x, const vec<T, N, S>& v) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator+(T x, const vec<T, N>& v) noexcept{
   return v + x;
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator-(T x, const vec<T, N, S>& v) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator-(T x, const vec<T, N>& v) noexcept{
   return -v + x;
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator-(const vec<T, N, S>& v, T x) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator-(const vec<T, N>& v, T x) noexcept{
   return v + (-x);
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator*(T x, const vec<T, N, S>& v) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator*(T x, const vec<T, N>& v) noexcept{
   return v * x;
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator/(const vec<T, N, S>& v, T x) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator/(const vec<T, N>& v, T x) noexcept{
   return v * (1.0 / x);
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto operator/(T x, const vec<T, N, S>& v) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto operator/(T x, const vec<T, N>& v) noexcept{
   return v.map([&](const auto& e){
     return x / e; 
   });
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto dot(const vec<T, N, S>& v1, const vec<T, N, S>& v2) noexcept{
-  const auto v = v1 * v2;
+template<typename T, std::size_t N>
+inline constexpr auto dot(const vec<T, N>& v1, const vec<T, N>& v2) noexcept{
+  auto result = T{};
+  for (auto i : range(N)){
+    result += v1[i] * v2[i];
+  }
 
-  return std::accumulate(v.dims, v.dims + N, 0.0, std::plus{});
+  return result;
 }
 
-template<typename T, bool S>
-inline constexpr auto cross(const vec<T, 3, S>& v1, const vec<T, 3, S>& v2) noexcept{
+template<typename T>
+inline constexpr auto cross(const vec<T, 3>& v1, const vec<T, 3>& v2) noexcept{
   const auto [a1, a2, a3] = v1;
   const auto [b1, b2, b3] = v2;
 
-  return vec<T, 3, S>(
+  return vec<T, 3>(
     a2 * b3 - a3 * b2,
     a3 * b1 - a1 * b3,
     a1 * b2 - a2 * b1
   );
-}
-
-template<typename T, std::size_t N, bool S>
-inline constexpr auto max(const vec<T, N, S>& v1, const vec<T, N, S>& v2) noexcept{
-  return zip(v1, v2).map([&](const auto& p){
-    return std::max(p.first, p.second);
-  });
-}
-
-template<typename T, std::size_t N, bool S>
-inline constexpr auto min(const vec<T, N, S>& v1, const vec<T, N, S>& v2) noexcept{
-  return zip(v1, v2).map([&](const auto& p){
-    return std::min(p.first, p.second);
-  });
-}
-
-template<typename T, std::size_t N, bool S>
-inline constexpr auto clamp(
-    const vec<T, N, S>& v, 
-    const vec<T, N, S>& v_min,
-    const vec<T, N, S>& v_max
-) noexcept{
-  return max(v_min, min(v, v_max));
 }
 
 using vec2 = vec<double, 2>;
@@ -614,23 +435,22 @@ using vec4 = vec<double, 4>;
 using fvec4 = vec<float, 4>;
 using ivec4 = vec<std::int32_t, 4>;
 
-template<typename T, std::size_t W, std::size_t H, bool S = true>
-struct mat{
-  using array_type = T[W][H];
-  array_type data;
+template<typename T, std::size_t W, std::size_t H>
+struct mat_base{
+  T data[W][H];
 
-  constexpr mat() noexcept : data{} {}
+  constexpr mat_base() noexcept : data{} {}
 
   template<typename... Targs, typename = detail::all_same<T, Targs...>>
-  constexpr mat(Targs&&... args) noexcept{
+  constexpr mat_base(const Targs&... args) noexcept{
     T array[] = { args... };
 
     for (const auto& [x, y] : range({ W, H })){
-      data[x][y] = array[y * W + x];
+      this->data[x][y] = array[y * W + x];
     }
   }
 
-  constexpr auto& operator=(const mat<T, W, H, !S>& m){
+  constexpr auto& operator=(const mat<T, W, H>& m){
     for (const auto& [x, y] : range({ W, H })){
       data[x][y] = m.data[x][y];
     }
@@ -682,7 +502,7 @@ struct mat{
     auto result = vec<T, W>();
 
     for (auto i : range(W)){
-      result.dims[i] = data[i][n];
+      result[i] = data[i][n];
     }
 
     return result;
@@ -692,7 +512,7 @@ struct mat{
     auto result = vec<T, W>();
 
     for (auto i : range(W)){
-      result.dims[i] = data[n][i];
+      result[i] = data[n][i];
     }
 
     return result;
@@ -700,13 +520,13 @@ struct mat{
 
   constexpr auto set_row(std::size_t n, const vec<T, W>& v) noexcept{
     for (auto i : range(W)){
-      data[i][n] = v.dims[i];
+      data[i][n] = v[i];
     }
   }
 
   constexpr auto set_col(std::size_t n, const vec<T, H>& v) noexcept{
     for (auto i : range(H)){
-      data[n][i] = v.dims[i];
+      data[n][i] = v[i];
     }
   }
 
@@ -731,6 +551,16 @@ struct mat{
 
     return true;
   }; 
+
+};
+
+template<typename T, std::size_t W, std::size_t H>
+struct mat : mat_base<T, W, H>{
+  constexpr mat() noexcept : mat_base<T, W, H>() {}
+
+  template<typename... Targs, typename = detail::all_same<T, Targs...>>
+  constexpr mat(const Targs&... args) noexcept 
+  : mat_base<T, W, H>(args...) {}
 
   constexpr auto& operator+=(const mat& other) noexcept{
     return (*this) = (*this) + other;
@@ -766,12 +596,12 @@ struct mat{
 };
 
 template<typename T, std::size_t N>
-struct mat<T, N, N> : mat<T, N, N, detail::NotSpecialized>{
-  constexpr mat() noexcept : mat<T, N, N, detail::NotSpecialized>() {}
+struct mat<T, N, N> : mat_base<T, N, N>{
+  constexpr mat() noexcept : mat_base<T, N, N>() {}
 
   template<typename... Targs, typename = detail::all_same<T, Targs...>>
   constexpr mat(Targs&&... args) noexcept 
-  : mat<T, N, N, detail::NotSpecialized>(std::forward<Targs>(args)...){}
+  : mat_base<T, N, N>(args...) {}
 
   constexpr mat(T value) noexcept : mat() {
     for (auto i : range(N)){
@@ -851,10 +681,42 @@ struct mat<T, N, N> : mat<T, N, N, detail::NotSpecialized>{
     }
     return sign * mat.diagonal_product();
   }
+
+  constexpr auto& operator+=(const mat& other) noexcept{
+    return (*this) = (*this) + other;
+  }
+
+  constexpr auto& operator+=(const T& x) noexcept{
+    return (*this) = (*this) + x;
+  }
+
+  constexpr auto& operator-=(const mat& other) noexcept{
+    return (*this) = (*this) - other;
+  }
+
+  constexpr auto& operator-=(const T& x) noexcept{
+    return (*this) = (*this) - x;
+  }
+
+  constexpr auto& operator*=(const vec<T, N>& other) noexcept{
+    return (*this) = (*this) * other;
+  }
+
+  constexpr auto& operator*=(const T& x) noexcept{
+    return (*this) = (*this) * x;
+  }
+
+  constexpr auto& operator/=(const vec<T, N>& other) noexcept{
+    return (*this) = (*this) / other;
+  }
+
+  constexpr auto& operator/=(const T& x) noexcept{
+    return (*this) = (*this) / x;
+  }
 };
 
-template<typename T, std::size_t W, std::size_t H, bool S1, bool S2>
-inline constexpr auto zip(const mat<T, W, H, S1>& m1, const mat<T, W, H, S2>& m2) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto zip(const mat<T, W, H>& m1, const mat<T, W, H>& m2) noexcept{
   auto result = mat<std::pair<T, T>, W, H>();
 
   for (const auto& [x, y] : range({ W, H })){
@@ -864,108 +726,108 @@ inline constexpr auto zip(const mat<T, W, H, S1>& m1, const mat<T, W, H, S2>& m2
   return result;
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto to_mat(const vec<T, N, S>& vec) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto to_mat(const vec<T, N>& vec) noexcept{
   auto result = mat<T, N, 1>();
 
   for (auto i : range(N)){
-    result[i][0] = vec.dims[i];
+    result[i][0] = vec[i];
   }
 
   return result;
 }
 
-template<typename T, bool S>
-inline constexpr auto to_vec(const mat<T, 1, 1, S>& mat) noexcept{
+template<typename T>
+inline constexpr auto to_vec(const mat<T, 1, 1>& mat) noexcept{
   return vec<T, 1>(mat[0][0]);
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto to_vec(const mat<T, N, 1, S>& mat) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto to_vec(const mat<T, N, 1>& mat) noexcept{
   auto result = vec<T, N>();
 
   for (auto i : range(N)){
-    result.dims[i] = mat[i][0];
+    result[i] = mat[i][0];
   }
 
   return result;
 }
 
-template<typename T, std::size_t N, bool S>
-inline constexpr auto to_vec(const mat<T, 1, N, S>& mat) noexcept{
+template<typename T, std::size_t N>
+inline constexpr auto to_vec(const mat<T, 1, N>& mat) noexcept{
   return to_vec(mat.t());
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S1, bool S2>
-inline constexpr auto operator==(const mat<T, W, H, S1>& m1, const mat<T, W, H, S2>& m2) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator==(const mat<T, W, H>& m1, const mat<T, W, H>& m2) noexcept{
   return zip(m1, m2).every([](const auto& p){
     return p.first == p.second;
   });
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S1, bool S2>
-inline constexpr auto operator!=(const mat<T, W, H, S1>& m1, const mat<T, W, H, S2>& m2) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator!=(const mat<T, W, H>& m1, const mat<T, W, H>& m2) noexcept{
   return !(m1 == m2);
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S1, bool S2>
-inline constexpr auto operator+(const mat<T, W, H, S1>& m1, const mat<T, W, H, S2>& m2) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator+(const mat<T, W, H>& m1, const mat<T, W, H>& m2) noexcept{
   return zip(m1, m2).map([](const auto& p){
     return p.first + p.second;
   });
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S>
-inline constexpr auto operator+(const mat<T, W, H, S>& mat, T value) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator+(const mat<T, W, H>& mat, T value) noexcept{
   return mat.map([&](const auto& e){
     return e + value;
   });
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S>
-inline constexpr auto operator+(T value, const mat<T, W, H, S>& mat) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator+(T value, const mat<T, W, H>& mat) noexcept{
   return mat + value;
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S>
-inline constexpr auto operator-(const mat<T, W, H, S>& mat) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator-(const mat<T, W, H>& mat) noexcept{
   return mat.map([](const auto& e){
     return -e;
   });
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S1, bool S2>
-inline constexpr auto operator-(const mat<T, W, H, S1>& m1, const mat<T, W, H, S2>& m2) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator-(const mat<T, W, H>& m1, const mat<T, W, H>& m2) noexcept{
   return m1 + (-m2);
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S>
-inline constexpr auto operator-(const mat<T, W, H, S>& mat, T value) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator-(const mat<T, W, H>& mat, T value) noexcept{
   return mat + (-value);
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S>
-inline constexpr auto operator-(T value, const mat<T, W, H, S>& mat) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator-(T value, const mat<T, W, H>& mat) noexcept{
   return value + (-mat);
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S>
-inline constexpr auto operator*(const mat<T, W, H, S>& mat, T value) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator*(const mat<T, W, H>& mat, T value) noexcept{
   return mat.map([&](const auto& e){
     return e * value;
   });
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S>
-inline constexpr auto operator*(T value, const mat<T, W, H, S>& mat) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator*(T value, const mat<T, W, H>& mat) noexcept{
   return mat * value;
 }
 
-template<typename T, std::size_t W, std::size_t H1, std::size_t W2, bool S1, bool S2>
-inline constexpr auto operator*(const mat<T, W, H1, S1>& m1, const mat<T, W2, W, S2>& m2) noexcept{
-  auto result = mat<T, W2, H1>();
+template<typename T, std::size_t W, std::size_t H, std::size_t W2>
+inline constexpr auto operator*(const mat<T, W, H>& m1, const mat<T, W2, W>& m2) noexcept{
+  auto result = mat<T, W2, H>();
 
-  for (const auto& [x, y] : range({ W2, H1 })){
+  for (const auto& [x, y] : range({ W2, H })){
     for (auto i : range(W)){
       result[x][y] += m1[i][y] * m2[x][i];
     }
@@ -974,92 +836,54 @@ inline constexpr auto operator*(const mat<T, W, H1, S1>& m1, const mat<T, W2, W,
   return result;
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S1, bool S2>
-inline constexpr auto operator*(const vec<T, H, S2>& vec, const mat<T, W, H, S1>& mat) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator*(const vec<T, H>& vec, const mat<T, W, H>& mat) noexcept{
   const auto vec_mat = to_mat(vec);
 
   return to_vec(vec_mat * mat);
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S1, bool S2>
-inline constexpr auto operator*(const mat<T, W, H, S1>& mat, const vec<T, W, S2>& vec) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator*(const mat<T, W, H>& mat, const vec<T, W>& vec) noexcept{
   const auto vec_mat = to_mat(vec);
 
   return to_vec(vec_mat * mat);
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S>
-inline constexpr auto operator/(const mat<T, W, H, S>& mat, T value) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator/(const mat<T, W, H>& mat, T value) noexcept{
   return mat * (1.0 / value);
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S>
-inline constexpr auto operator/(T value, const mat<T, W, H, S>& mat) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator/(T value, const mat<T, W, H>& mat) noexcept{
   return mat.map([&](const auto& e){
     return value / e;
   });
 }
 
-template<typename T, std::size_t W, std::size_t H, std::size_t W2, bool S1, bool S2>
-inline constexpr auto operator/(const mat<T, W, H, S1>& m1, const mat<T, W2, W, S2>& m2) noexcept{
+template<typename T, std::size_t W, std::size_t H, std::size_t W2>
+inline constexpr auto operator/(const mat<T, W, H>& m1, const mat<T, W2, W>& m2) noexcept{
   return m1 * (1.0 / m2);
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S1, bool S2>
-inline constexpr auto operator/(const vec<T, H, S2>& vec, const mat<T, W, H, S1>& mat) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator/(const vec<T, H>& vec, const mat<T, W, H>& mat) noexcept{
   return vec * (1.0 / mat);
 }
 
-template<typename T, std::size_t W, std::size_t H, bool S, bool S2>
-inline constexpr auto operator/(const mat<T, W, H, S>& mat, const vec<T, W, S2>& vec) noexcept{
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto operator/(const mat<T, W, H>& mat, const vec<T, W>& vec) noexcept{
   return mat * (1.0 / vec);
 }
 
-template<typename T, std::size_t N, bool S>
-template<bool S2>
-constexpr auto vec<T, N, S>::operator*=(const mat<T, N, N, S2>& mat) noexcept -> vec&{
-  return (*this) = (*this) * mat;
+template<typename T, std::size_t N>
+constexpr auto vec<T, N>::operator*=(const mat<T, N, N>& m) noexcept -> vec&{
+  return (*this) = (*this) * m;
 }
 
-template<typename T, std::size_t N, bool S>
-template<bool S2>
-constexpr auto vec<T, N, S>::operator/=(const mat<T, N, N, S2>& mat) noexcept -> vec&{
-  return (*this) = (*this) * mat;
-}
-
-template<typename T>
-template<bool S>
-constexpr auto vec<T, 2>::operator*=(const mat<T, 2, 2, S>& mat) noexcept -> vec&{
-  return (*this) = (*this) * mat;
-}
-
-template<typename T>
-template<bool S>
-constexpr auto vec<T, 2>::operator/=(const mat<T, 2, 2, S>& mat) noexcept -> vec&{
-  return (*this) = (*this) * mat;
-}
-
-template<typename T>
-template<bool S>
-constexpr auto vec<T, 3>::operator*=(const mat<T, 3, 3, S>& mat) noexcept -> vec&{
-  return (*this) = (*this) * mat;
-}
-
-template<typename T>
-template<bool S>
-constexpr auto vec<T, 3>::operator/=(const mat<T, 3, 3, S>& mat) noexcept -> vec&{
-  return (*this) = (*this) * mat;
-}
-
-template<typename T>
-template<bool S>
-constexpr auto vec<T, 4>::operator*=(const mat<T, 4, 4, S>& mat) noexcept -> vec&{
-  return (*this) = (*this) * mat;
-}
-
-template<typename T>
-template<bool S>
-constexpr auto vec<T, 4>::operator/=(const mat<T, 4, 4, S>& mat) noexcept -> vec&{
+template<typename T, std::size_t N>
+constexpr auto vec<T, N>::operator/=(const mat<T, N, N>& mat) noexcept -> vec&{
   return (*this) = (*this) * mat;
 }
 
@@ -1070,18 +894,135 @@ using imat3 = mat<std::int32_t, 3, 3>;
 using mat4 = mat<double, 4, 4>;
 using imat4 = mat<std::int32_t, 4, 4>;
 
-} //namespace gf::math
+//MAX:
+template<typename T, typename Callable, typename = detail::arithmetic<T>>
+inline constexpr auto max(T a, T b, Callable callable) noexcept{
+  return std::max(a, b, callable);  
+}
+
+template<typename T, typename = detail::arithmetic<T>>
+inline constexpr auto max(T a, T b) noexcept{
+  return std::max(a, b);  
+}
+
+template<typename T, std::size_t N, typename Callable>
+inline constexpr auto max(
+    const vec<T, N>& a, 
+    const vec<T, N>& b,
+    Callable callable
+) noexcept{
+  return zip(a, b).map([&](const auto& p){
+    return std::max(p.first, p.second, callable);
+  });
+}
+
+template<typename T, std::size_t N>
+inline constexpr auto max(
+    const vec<T, N>& a, 
+    const vec<T, N>& b
+) noexcept{
+  return math::max(a, b, std::less<T>{});
+}
+
+template<typename T, std::size_t W, std::size_t H, typename Callable>
+inline constexpr auto max(
+    const mat<T, W, H>& a,
+    const mat<T, W, H>& b,
+    Callable callable
+) noexcept{
+  return zip(a, b).map([&](const auto& p){
+    return std::max(p.first, p.second, callable);
+  });
+}
+
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto max(
+    const mat<T, W, H>& a,
+    const mat<T, W, H>& b
+) noexcept{
+  return math::max(a, b, std::less<T>{});
+}
+
+//MIN:
+template<typename T, typename Callable, typename = detail::arithmetic<T>>
+inline constexpr auto min(T a, T b, Callable callable) noexcept{
+  return std::min(a, b, callable);  
+}
+
+template<typename T, typename = detail::arithmetic<T>>
+inline constexpr auto min(T a, T b) noexcept{
+  return std::min(a, b);  
+}
+
+template<typename T, std::size_t N, typename Callable>
+inline constexpr auto min(
+    const vec<T, N>& a, 
+    const vec<T, N>& b,
+    Callable callable
+) noexcept{
+  return zip(a, b).map([&](const auto& p){
+    return std::min(p.first, p.second, callable);
+  });
+}
+
+template<typename T, std::size_t N>
+inline constexpr auto min(
+    const vec<T, N>& a, 
+    const vec<T, N>& b
+) noexcept{
+  return math::min(a, b, std::less<T>{});
+}
+
+template<typename T, std::size_t W, std::size_t H, typename Callable>
+inline constexpr auto min(
+    const mat<T, W, H>& a,
+    const mat<T, W, H>& b,
+    Callable callable
+) noexcept{
+  return zip(a, b).map([&](const auto& p){
+    return std::min(p.first, p.second, callable);
+  });
+}
+
+template<typename T, std::size_t W, std::size_t H>
+inline constexpr auto min(
+    const mat<T, W, H>& a,
+    const mat<T, W, H>& b
+) noexcept{
+  return math::min(a, b, std::less<T>{});
+}
 
 //For structured binding to work:
+template<std::size_t I, typename T, std::size_t N>
+auto get(const vec<T, N>& vec) noexcept{
+  return vec[I];
+}
+
+template<std::size_t I, typename T, std::size_t N>
+auto& get(vec<T, N>& vec) noexcept{
+  return vec[I];
+}
+
+template<std::size_t I, typename T, std::size_t N>
+auto&& get(vec<T, N>&& vec) noexcept{
+  return std::move(vec[I]);
+}
+
+template<std::size_t I, typename T, std::size_t N>
+const auto&& get(const vec<T, N>&& vec) noexcept{
+  return std::move(vec[I]);
+}
+
+} //namespace gf::math
+
 namespace std{
 
-template<typename T, size_t N, bool S>
-struct tuple_size<gf::math::vec<T, N, S>> : integral_constant<size_t, N>{};
+template<typename T, size_t N>
+struct tuple_size<gf::math::vec<T, N>> : integral_constant<size_t, N>{};
 
-template<size_t I, typename T, size_t N, bool S>
-struct tuple_element<I, gf::math::vec<T, N, S>>{
+template<size_t I, typename T, size_t N>
+struct tuple_element<I, gf::math::vec<T, N>>{
   using type = T;
-  static_assert(I < N, "Structured binding's out of bounds vec");
 };
 
 } //namespace std
@@ -1090,13 +1031,13 @@ struct tuple_element<I, gf::math::vec<T, N, S>>{
 
 #include <iostream>
 
-template<typename T, std::size_t N, bool S>
-auto operator<<(std::ostream& out, const gf::math::vec<T, N, S>& vec)
+template<typename T, std::size_t N>
+auto operator<<(std::ostream& out, const gf::math::vec<T, N>& vec)
 -> std::ostream&{
   out << "[ ";
 
   for (auto i : gf::math::range(N)){
-    out << vec.dims[i] << ' ';
+    out << vec[i] << ' ';
   }
 
   return out << ']';
@@ -1114,6 +1055,5 @@ auto operator<<(std::ostream& out, const gf::math::mat<T, W, H>& mat)
 
   return out;
 }
-
 
 #endif
