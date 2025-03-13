@@ -990,6 +990,71 @@ inline constexpr auto clamp(
   return math::min(math::max(x, min), max, std::less<typename T::value_type>{});
 }
 
+//ABS:
+template<typename T, typename = detail::arithmetic<T>>
+inline constexpr auto abs(T x) noexcept{
+  return std::abs(x);
+}
+
+template<typename T, typename = detail::not_arithmetic<T>>
+inline constexpr auto abs(const T& x) noexcept{
+  return x.map([](const auto& e){
+    return math::abs(e);
+  });
+}
+
+//ROUND:
+template<typename T, typename = detail::arithmetic<T>>
+inline constexpr auto round(T x) noexcept{
+  return std::round(x);
+}
+
+template<typename T, typename = detail::not_arithmetic<T>>
+inline constexpr auto round(const T& x) noexcept{
+  return x.map([](const auto& e){
+    return math::round(e);
+  });
+}
+
+//TRUNC:
+template<typename T, typename = detail::arithmetic<T>>
+inline constexpr auto trunc(T x) noexcept{
+  return std::trunc(x);
+}
+
+template<typename T, typename = detail::not_arithmetic<T>>
+inline constexpr auto trunc(const T& x) noexcept{
+  return x.map([](const auto& e){
+    return math::trunc(e);
+  });
+}
+
+//FLOOR:
+template<typename T, typename = detail::arithmetic<T>>
+inline constexpr auto floor(T x) noexcept{
+  return std::floor(x);
+}
+
+template<typename T, typename = detail::not_arithmetic<T>>
+inline constexpr auto floor(const T& x) noexcept{
+  return x.map([](const auto& e){
+    return math::floor(e);
+  });
+}
+
+//CEIL:
+template<typename T, typename = detail::arithmetic<T>>
+inline constexpr auto ceil(T x) noexcept{
+  return std::floor(x);
+}
+
+template<typename T, typename = detail::not_arithmetic<T>>
+inline constexpr auto ceil(const T& x) noexcept{
+  return x.map([](const auto& e){
+    return math::floor(e);
+  });
+}
+
 //For structured binding to work:
 template<std::size_t I, typename T, std::size_t N>
 auto get(const vec<T, N>& vec) noexcept{

@@ -80,6 +80,8 @@ auto main() -> int{
     
     expect("len_squared()", vec.len_squared(), 87.0);
     expect("len()", vec.len(), std::sqrt(87.0));
+    expect("scalar abs()", gf::math::abs(-4.0), 4.0);
+    expect("vec abs()", gf::math::abs(vec), vec4(2.0, 3.0, 5.0, 7.0));
 
     vec = vec4(1234.0);
     expect("single param ctor", vec.y, vec.x);
