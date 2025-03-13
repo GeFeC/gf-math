@@ -102,10 +102,12 @@ auto main() -> int{
     expect("normalization", vec.normalized(), vec / 2.0);
     expect("unit vector len", vec.normalized().len(), 1.0);
 
-    const auto v1 = vec4(2.0, -0.5, 1.5, -1.0);
-    const auto v2 = vec4(2.0, -3.0, 5.0, -7.0);
-    expect("max", gf::math::max(v1, v2), vec4(2.0, -0.5, 5.0, -1.0));
-    expect("min", gf::math::min(v1, v2), vec4(2.0, -3.0, 1.5, -7.0));
+    vec = vec4(-5.0, 4.0, 19.0, 3.33);
+
+    const auto v1 = vec4(2.0, -3.0, 1.5, -7.0);
+    const auto v2 = vec4(2.0, -0.5, 5.0, -1.0);
+    expect("scalar clamp", gf::math::clamp(1.5, -1.0, 1.0), 1.0);
+    expect("vec clamp", gf::math::clamp(vec, v1, v2), vec4(2.0, -0.5, 5.0, -1.0));
   }
 
   {

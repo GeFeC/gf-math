@@ -6,7 +6,7 @@
 #include <utility>
 #include <cmath>
 #include <type_traits>
-#include <numeric>
+#include <functional>
 
 namespace gf::math{
 
@@ -19,6 +19,9 @@ using all_same = std::enable_if_t<std::conjunction_v<std::is_same<T, Targs>...>>
 
 template<typename T>
 using arithmetic = std::enable_if_t<std::is_arithmetic_v<T>>;
+
+template<typename T>
+using not_arithmetic = std::enable_if_t<!std::is_arithmetic_v<T>>;
 
 } //namespace detail
 
@@ -223,9 +226,9 @@ struct vec : vec_props<T, N>{
 
   template<typename Callable>
   constexpr auto map(Callable callable) const noexcept{
-    using item_type = decltype(callable(std::declval<T&>()));
+    using mapped_type = decltype(callable(std::declval<T&>()));
 
-    auto result = vec<item_type, N>();
+    auto result = vec<mapped_type, N>();
 
     for (auto i : range(N)){
       result[i] = callable((*this)[i]);
@@ -305,7 +308,6 @@ template<typename T>
 inline constexpr auto make_pair(const T& t1, const T& t2){
   return pair<T>(t1, t2);
 }
-
 
 template<typename T, std::size_t N>
 inline constexpr auto zip(const vec<T, N>& v1, const vec<T, N>& v2) noexcept{
@@ -556,6 +558,8 @@ struct mat_base{
 
 template<typename T, std::size_t W, std::size_t H>
 struct mat : mat_base<T, W, H>{
+  using value_type = T;
+
   constexpr mat() noexcept : mat_base<T, W, H>() {}
 
   template<typename... Targs, typename = detail::all_same<T, Targs...>>
@@ -597,6 +601,8 @@ struct mat : mat_base<T, W, H>{
 
 template<typename T, std::size_t N>
 struct mat<T, N, N> : mat_base<T, N, N>{
+  using value_type = T;
+
   constexpr mat() noexcept : mat_base<T, N, N>() {}
 
   template<typename... Targs, typename = detail::all_same<T, Targs...>>
@@ -905,10 +911,10 @@ inline constexpr auto max(T a, T b) noexcept{
   return std::max(a, b);  
 }
 
-template<typename T, std::size_t N, typename Callable>
+template<typename T, typename Callable, typename = detail::not_arithmetic<T>>
 inline constexpr auto max(
-    const vec<T, N>& a, 
-    const vec<T, N>& b,
+    const T& a,
+    const T& b,
     Callable callable
 ) noexcept{
   return zip(a, b).map([&](const auto& p){
@@ -916,31 +922,12 @@ inline constexpr auto max(
   });
 }
 
-template<typename T, std::size_t N>
+template<typename T, typename = detail::not_arithmetic<T>>
 inline constexpr auto max(
-    const vec<T, N>& a, 
-    const vec<T, N>& b
+    const T& a,
+    const T& b
 ) noexcept{
-  return math::max(a, b, std::less<T>{});
-}
-
-template<typename T, std::size_t W, std::size_t H, typename Callable>
-inline constexpr auto max(
-    const mat<T, W, H>& a,
-    const mat<T, W, H>& b,
-    Callable callable
-) noexcept{
-  return zip(a, b).map([&](const auto& p){
-    return std::max(p.first, p.second, callable);
-  });
-}
-
-template<typename T, std::size_t W, std::size_t H>
-inline constexpr auto max(
-    const mat<T, W, H>& a,
-    const mat<T, W, H>& b
-) noexcept{
-  return math::max(a, b, std::less<T>{});
+  return math::max(a, b, std::less<typename T::value_type>{});
 }
 
 //MIN:
@@ -954,10 +941,10 @@ inline constexpr auto min(T a, T b) noexcept{
   return std::min(a, b);  
 }
 
-template<typename T, std::size_t N, typename Callable>
+template<typename T, typename Callable, typename = detail::not_arithmetic<T>>
 inline constexpr auto min(
-    const vec<T, N>& a, 
-    const vec<T, N>& b,
+    const T& a, 
+    const T& b,
     Callable callable
 ) noexcept{
   return zip(a, b).map([&](const auto& p){
@@ -965,31 +952,42 @@ inline constexpr auto min(
   });
 }
 
-template<typename T, std::size_t N>
+template<typename T, typename = detail::not_arithmetic<T>>
 inline constexpr auto min(
-    const vec<T, N>& a, 
-    const vec<T, N>& b
+    const T& a, 
+    const T& b
 ) noexcept{
-  return math::min(a, b, std::less<T>{});
+  return math::min(a, b, std::less<typename T::value_type>{});
 }
 
-template<typename T, std::size_t W, std::size_t H, typename Callable>
-inline constexpr auto min(
-    const mat<T, W, H>& a,
-    const mat<T, W, H>& b,
+//CLAMP:
+template<typename T, typename Callable, typename = detail::arithmetic<T>>
+inline constexpr auto clamp(T x, T min, T max, Callable callable) noexcept{
+  return std::clamp(x, min, max, callable);  
+}
+
+template<typename T, typename = detail::arithmetic<T>>
+inline constexpr auto clamp(T x, T min, T max) noexcept{
+  return math::clamp(x, min, max, std::less<T>{});
+}
+
+template<typename T, typename Callable, typename = detail::not_arithmetic<T>>
+inline constexpr auto clamp(
+    const T& x, 
+    const T& min,
+    const T& max,
     Callable callable
 ) noexcept{
-  return zip(a, b).map([&](const auto& p){
-    return std::min(p.first, p.second, callable);
-  });
+  return math::min(math::max(x, min), max, callable);
 }
 
-template<typename T, std::size_t W, std::size_t H>
-inline constexpr auto min(
-    const mat<T, W, H>& a,
-    const mat<T, W, H>& b
+template<typename T, typename = detail::not_arithmetic<T>>
+inline constexpr auto clamp(
+    const T& x, 
+    const T& min,
+    const T& max
 ) noexcept{
-  return math::min(a, b, std::less<T>{});
+  return math::min(math::max(x, min), max, std::less<typename T::value_type>{});
 }
 
 //For structured binding to work:

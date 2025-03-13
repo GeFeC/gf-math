@@ -127,6 +127,13 @@ auto main() -> int{
       42.0 + 6.0 * 28.0 + 9.0 * 496.0,
       24.0 + 56.0 + 0.0
     ));
+
+    const auto mat5 = m::mat3().map([](auto){return 5.0;});
+    expect("matrix clamp", m::clamp(mat, m::mat3(0.0), mat5), m::mat3(
+      2.0, 1.0, 3.0,
+      5.0, 5.0, 5.0,
+      4.0, 2.0, 0.0
+    ));
   }
 
   {
