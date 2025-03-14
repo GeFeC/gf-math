@@ -7,7 +7,7 @@
 auto main() -> int{
   namespace m = gf::math;
   
-  std::cerr << std::setprecision(100);
+  //std::cerr << std::setprecision(100);
 
   static_assert(sizeof(m::mat<double, 10, 10>) == sizeof(double) * 10 * 10);
 
@@ -149,7 +149,7 @@ auto main() -> int{
   }
 
   {
-    const auto vec = m::vec4(1.0, 2.0, 3.0, 4.0);
+    auto vec = m::vec4(1.0, 2.0, 3.0, 4.0);
     
     const auto mat = m::mat4(
       randval<double>(), randval<double>(), randval<double>(), randval<double>(),
@@ -165,6 +165,16 @@ auto main() -> int{
     );
 
     expect("vec4 * mat1x4", vec * mat1, m::vec<double, 1>(41));
+
+    vec = m::vec4(0.0, 0.0, 0.0, 1.0);
+
+    const auto translation = m::vec3(-2.0, 6.0, 4.0);
+    expect("vector translation", vec * m::translation(translation), m::vec4(-2.0, 6.0, 4.0, 1.0));
+    expect("zero vector scale", vec * m::scale(m::vec3(1.0)), vec);
+    vec = m::vec4(1.0, 2.0, 3.0, 1.0);
+    const auto scale = m::vec3(1.0, 2.0, 3.0);
+    expect("vector scale", vec * m::scale(scale), m::vec4(1.0, 4.0, 9.0, 1.0));
+    vec = m::vec4(0.0, 1.0, 0.0, 1.0);
   }
 
   {

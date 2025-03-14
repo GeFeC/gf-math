@@ -6,13 +6,13 @@
 auto main() -> int{
   std::cerr << std::setprecision(100);
 
-  using namespace gf::math;
+  namespace m = gf::math;
 
-  static_assert(sizeof(vec<double, 10>) == sizeof(double) * 10);
+  static_assert(sizeof(m::vec<double, 10>) == sizeof(double) * 10);
 
   {
-    auto vec = vec4(1.0, 2.0, 3.0, 4.0);
-    auto mat = mat4(1.0);
+    auto vec = m::vec4(1.0, 2.0, 3.0, 4.0);
+    auto mat = m::mat4(1.0);
     auto x = 1.0;
 
     vec = vec;
@@ -55,9 +55,9 @@ auto main() -> int{
 
   {
     test("vec");
-    expect("vec init", vec4(), vec4(0.0, 0.0, 0.0, 0.0));
+    expect("vec init", m::vec4(), m::vec4(0.0, 0.0, 0.0, 0.0));
 
-    auto vec = vec4(1.0, 2.0, 3.0, 4.0);
+    auto vec = m::vec4(1.0, 2.0, 3.0, 4.0);
 
     expect("x assign", vec.x, 1.0);
     expect("y assign", vec.y, 2.0);
@@ -76,48 +76,48 @@ auto main() -> int{
     expect("struct binding z", &vec.z, &z);
     expect("struct binding w", &vec.w, &w);
 
-    vec = vec4(-2.0, 3.0, -5.0, 7.0);
+    vec = m::vec4(-2.0, 3.0, -5.0, 7.0);
     
     expect("len_squared()", vec.len_squared(), 87.0);
     expect("len()", vec.len(), std::sqrt(87.0));
     expect("scalar abs()", gf::math::abs(-4.0), 4.0);
-    expect("vec abs()", gf::math::abs(vec), vec4(2.0, 3.0, 5.0, 7.0));
+    expect("vec abs()", gf::math::abs(vec), m::vec4(2.0, 3.0, 5.0, 7.0));
 
-    vec = vec4(1234.0);
+    vec = m::vec4(1234.0);
     expect("single param ctor", vec.y, vec.x);
     expect("single param ctor", vec.z, vec.x);
     expect("single param ctor", vec.w, vec.x);
 
-    const auto a = vec4(0.5, -0.5, 0.0, 0.1);
+    const auto a = m::vec4(0.5, -0.5, 0.0, 0.1);
     const auto a_copy = a;
-    const auto b = vec4(2.0, 3.0, 5.0, 7.0);
+    const auto b = m::vec4(2.0, 3.0, 5.0, 7.0);
 
     expect("comparison", a == a_copy, true);
-    expect("addition", a + b, vec4(2.5, 2.5, 5.0, 7.1));
-    expect("negation", -a, vec4(-0.5, 0.5, 0.0, -0.1));
-    expect("vec * scalar", b * -2.0, vec4(-4.0, -6.0, -10.0, -14.0));
-    expect("vec * vec", a * b, vec4(2.0 * 0.5, -0.5 * 3.0, 0.0 * 5.0, 0.1 * 7.0));
-    expect("scalar / vec", 10.0 / b, vec4(10.0 / 2.0, 10.0 / 3.0, 10.0 / 5.0, 10.0 / 7.0));
-    expect("dot product", gf::math::dot(a, b), 0.5 * 2.0 - 0.5 * 3.0 + 7.0 * 0.1);
-    vec = vec4(0.5);
+    expect("addition", a + b, m::vec4(2.5, 2.5, 5.0, 7.1));
+    expect("negation", -a, m::vec4(-0.5, 0.5, 0.0, -0.1));
+    expect("vec * scalar", b * -2.0, m::vec4(-4.0, -6.0, -10.0, -14.0));
+    expect("vec * vec", a * b, m::vec4(2.0 * 0.5, -0.5 * 3.0, 0.0 * 5.0, 0.1 * 7.0));
+    expect("scalar / vec", 10.0 / b, m::vec4(10.0 / 2.0, 10.0 / 3.0, 10.0 / 5.0, 10.0 / 7.0));
+    expect("dot product", m::dot(a, b), 0.5 * 2.0 - 0.5 * 3.0 + 7.0 * 0.1);
+    vec = m::vec4(0.5);
     vec += 0.5;
     expect("normalization", vec.normalized(), vec / 2.0);
     expect("unit vector len", vec.normalized().len(), 1.0);
 
-    vec = vec4(-5.0, 4.0, 19.0, 3.33);
+    vec = m::vec4(-5.0, 4.0, 19.0, 3.33);
 
-    const auto v1 = vec4(2.0, -3.0, 1.5, -7.0);
-    const auto v2 = vec4(2.0, -0.5, 5.0, -1.0);
-    expect("scalar clamp", gf::math::clamp(1.5, -1.0, 1.0), 1.0);
-    expect("vec clamp", gf::math::clamp(vec, v1, v2), vec4(2.0, -0.5, 5.0, -1.0));
+    const auto v1 = m::vec4(2.0, -3.0, 1.5, -7.0);
+    const auto v2 = m::vec4(2.0, -0.5, 5.0, -1.0);
+    expect("scalar clamp", m::clamp(1.5, -1.0, 1.0), 1.0);
+    expect("vec clamp", m::clamp(vec, v1, v2), m::vec4(2.0, -0.5, 5.0, -1.0));
   }
 
   {
     test("vec3");
 
-    auto vec = vec3(1.0, 2.0, 3.0);
-    auto vec2 = vec3(98.0, 99.0, 100.0);
+    auto vec = m::vec3(1.0, 2.0, 3.0);
+    auto vec2 = m::vec3(98.0, 99.0, 100.0);
 
-    expect("cross product", cross(vec, vec2), vec3(-97.0, 194.0, -97.0));
+    expect("cross product", cross(vec, vec2), m::vec3(-97.0, 194.0, -97.0));
   }
 }

@@ -25,6 +25,8 @@ using not_arithmetic = std::enable_if_t<!std::is_arithmetic_v<T>>;
 
 } //namespace detail
 
+inline constexpr auto pi = 3.141592653589793238462643;
+
 template<typename T>
 struct range_base{
   T min;
@@ -899,6 +901,46 @@ using mat3 = mat<double, 3, 3>;
 using imat3 = mat<std::int32_t, 3, 3>;
 using mat4 = mat<double, 4, 4>;
 using imat4 = mat<std::int32_t, 4, 4>;
+
+template<typename T, std::size_t N>
+inline constexpr auto translation(const vec<T, N>& v) noexcept{
+  auto m = mat<T, N + 1, N + 1>(1.0);
+
+  for (auto i : range(N)){
+    m[i][N] = v[i];
+  }
+
+  return m;
+}
+
+template<typename T, std::size_t N>
+inline constexpr auto scale(const vec<T, N>& v) noexcept{
+  auto m = mat<T, N + 1, N + 1>(1.0);
+
+  for (auto i : range(N)){
+    m[i][i] = v[i];
+  }
+
+  return m;
+}
+
+template<typename T, std::size_t N>
+inline constexpr auto rotation(T radians, const vec<T, N>& v) noexcept{
+  const auto [x, y, z] = v.normalized();
+
+  const auto x2 = x * x;
+  const auto y2 = y * y;
+  const auto z2 = z * z;
+  const auto sin = std::sin(radians);
+  const auto cos = std::cos(radians);
+
+  return mat<T, N + 1, N + 1>(
+    cos + x2 * (1 - cos), y * x * (1 - cos) + z * sin, z * z * (1 - cos) - y * sin, 0.0,
+    x * y * (1 - cos) - z * sin, cos + y2 * (1 - cos), y * z * (1 - cos) + x * sin, 0.0,
+    x * z * (1 - cos) + y * sin, y * z * (1 - cos) - x * sin, cos + z2 * (1 - cos), 0.0,
+    0.0, 0.0, 0.0, 1.0
+  );
+}
 
 //MAX:
 template<typename T, typename Callable, typename = detail::arithmetic<T>>
