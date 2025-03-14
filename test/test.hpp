@@ -1,20 +1,15 @@
 #pragma once
 #include <string>
 #include <iostream>
-#include <cstdlib>
-#include <ctime>
 
-inline auto test(const std::string& name){
-  std::cerr << "\nTEST:" << name << "\n\n";
+template<typename Callable>
+inline auto test(const std::string& test_name, Callable callable){
+  if (!callable()){
+    throw std::runtime_error("TEST " + test_name + " FAILED!\n");
+  }
 }
 
 template<typename T>
-inline auto expect(const std::string& test_name, T value, T expected){
-  if (expected != value){
-    std::cerr << "\nTEST " << test_name << " FAILED!\n";
-    std::cerr << "Expected " << expected << ", but got " << value << "\n\n";
-    throw std::runtime_error("TEST FAILED!\n");
-  }
-
-  std::cerr << "\tTEST " << test_name << " PASSED!\n";
+auto check(const T& value, const T& expected){
+  std::cerr << "Expected: " << expected << "\nGot: " << value << "\n";
 }
