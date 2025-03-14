@@ -4,11 +4,6 @@
 #include <cstdlib>
 #include <ctime>
 
-template<typename T = int>
-inline auto randval(){
-  return static_cast<T>(std::rand() % 20000 - 10000);
-}
-
 inline auto test(const std::string& name){
   std::cerr << "\nTEST:" << name << "\n\n";
 }
@@ -23,9 +18,3 @@ inline auto expect(const std::string& test_name, T value, T expected){
 
   std::cerr << "\tTEST " << test_name << " PASSED!\n";
 }
-
-struct Initialiser{
-  Initialiser(){
-    std::srand(std::time(NULL));
-  }
-} inline initialiser;
