@@ -723,6 +723,27 @@ struct mat<T, N, N> : mat_base<T, N, N>{
   }
 };
 
+template<typename T>
+auto compare(const T& a, const T& b, double epsilon = 0.0){
+  return
+    a - T(epsilon) >= b &&
+    a + T(epsilon) <= b;
+}
+
+template<typename T, std::size_t N>
+auto compare(
+  const vec<T, N>& a, 
+  const vec<T, N>& b, 
+  double epsilon = 0.0
+){
+  return zip(a, b).every([&](const auto& p){
+    const auto [a, b] = p;
+    return 
+      a >= b - epsilon &&
+      a <= b + epsilon;
+  });
+}
+
 template<typename T, std::size_t W, std::size_t H>
 inline constexpr auto zip(const mat<T, W, H>& m1, const mat<T, W, H>& m2) noexcept{
   auto result = mat<std::pair<T, T>, W, H>();
@@ -855,7 +876,7 @@ template<typename T, std::size_t W, std::size_t H>
 inline constexpr auto operator*(const mat<T, W, H>& mat, const vec<T, W>& vec) noexcept{
   const auto vec_mat = to_mat(vec);
 
-  return to_vec(vec_mat * mat);
+  return to_vec(mat * vec_mat.t());
 }
 
 template<typename T, std::size_t W, std::size_t H>
@@ -907,7 +928,7 @@ inline constexpr auto translation(const vec<T, N>& v) noexcept{
   auto m = mat<T, N + 1, N + 1>(1.0);
 
   for (auto i : range(N)){
-    m[i][N] = v[i];
+    m[N][i] = v[i];
   }
 
   return m;
@@ -935,9 +956,9 @@ inline constexpr auto rotation(T radians, const vec<T, N>& v) noexcept{
   const auto cos = std::cos(radians);
 
   return mat<T, N + 1, N + 1>(
-    cos + x2 * (1 - cos), y * x * (1 - cos) + z * sin, z * z * (1 - cos) - y * sin, 0.0,
-    x * y * (1 - cos) - z * sin, cos + y2 * (1 - cos), y * z * (1 - cos) + x * sin, 0.0,
-    x * z * (1 - cos) + y * sin, y * z * (1 - cos) - x * sin, cos + z2 * (1 - cos), 0.0,
+    cos + x2 * (1 - cos), x * y * (1 - cos) - z * sin, x * z * (1 - cos) + y * sin, 0.0, 
+    y * x * (1 - cos) + z * sin, cos + y2 * (1 - cos), y * z * (1 - cos) - x * sin, 0.0, 
+    z * z * (1 - cos) - y * sin, y * z * (1 - cos) + x * sin, cos + z2 * (1 - cos), 0.0,
     0.0, 0.0, 0.0, 1.0
   );
 }

@@ -146,13 +146,11 @@ auto main() -> int{
     );
   });
 
-
-
   test("vector translation", []{
     auto vec = m::vec4(0.0, 0.0, 0.0, 1.0);
 
     const auto translation = m::vec3(-2.0, 6.0, 4.0);
-    return vec * m::translation(translation) == m::vec4(-2.0, 6.0, 4.0, 1.0);
+    return m::translation(translation) * vec == m::vec4(-2.0, 6.0, 4.0, 1.0);
   });
 
   test("vector scale", [&]{ 
@@ -161,8 +159,15 @@ auto main() -> int{
     auto vec = m::vec4(1.0, 2.0, 3.0, 1.0);
 
     return 
-      zero * m::scale(scale) == zero &&
-      vec * m::scale(scale) == m::vec4(1.0, 4.0, 9.0, 1.0);
+      m::scale(scale) * zero == zero &&
+      m::scale(scale) * vec == m::vec4(1.0, 4.0, 9.0, 1.0);
+  });
+
+  test("vector rotation", [&]{
+    auto vec = m::vec4(0.0, 1.0, 0.0, 1.0);
+    const auto rotation = m::rotation(m::pi / 2.0, m::vec3(0.0, 0.0, 1.0)) * vec;
+
+    return m::compare(rotation, m::vec4(-1.0, 0.0, 0.0, 1.0), 0.001);
   });
 
   mat = m::mat4(
