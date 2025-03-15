@@ -526,9 +526,9 @@ struct mat_base{
   }
 
   constexpr auto col(std::size_t n) const noexcept{
-    auto result = vec<T, W>();
+    auto result = vec<T, H>();
 
-    for (auto i : range(W)){
+    for (auto i : range(H)){
       result[i] = data[n][i];
     }
 
@@ -562,8 +562,8 @@ struct mat_base{
   }; 
 
   constexpr auto is_any_column_zero() const noexcept{
-    for (auto i : range(W)){
-      if (col(i) != vec<T, W>(0.0)) return false;
+    for (auto i : range(H)){
+      if (col(i) != vec<T, H>(0.0)) return false;
     }
 
     return true;
