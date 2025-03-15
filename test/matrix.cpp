@@ -167,7 +167,7 @@ auto main() -> int{
     auto vec = m::vec4(0.0, 1.0, 0.0, 1.0);
     const auto rotation = m::rotation(m::pi / 2.0, m::vec3(0.0, 0.0, 1.0)) * vec;
 
-    return m::compare(rotation, m::vec4(-1.0, 0.0, 0.0, 1.0), 0.001);
+    return m::compare(rotation, m::vec4(-1.0, 0.0, 0.0, 1.0));
   });
 
   mat = m::mat4(

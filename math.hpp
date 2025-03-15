@@ -765,17 +765,26 @@ struct mat<T, N, N> : mat_base<T, N, N>{
 };
 
 template<typename T>
-auto compare(const T& a, const T& b, double epsilon = 0.0){
+inline constexpr T Epsilon = T();
+
+template<>
+inline constexpr auto Epsilon<float> = 0.00001f;
+
+template<>
+inline constexpr auto Epsilon<double> = 0.000'000'000'001;
+
+template<typename T>
+auto compare(const T& a, const T& b, T epsilon = Epsilon<T>){
   return
-    a - T(epsilon) >= b &&
-    a + T(epsilon) <= b;
+    a >= b - epsilon &&
+    a <= b + epsilon;
 }
 
 template<typename T, std::size_t N>
 auto compare(
   const vec<T, N>& a, 
   const vec<T, N>& b, 
-  double epsilon = 0.0
+  T epsilon = Epsilon<T>
 ){
   return zip(a, b).every([&](const auto& p){
     const auto [a, b] = p;

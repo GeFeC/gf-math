@@ -155,7 +155,6 @@ auto main() -> int{
     return m::dot(vec, vec2) == x1 * x2 + y1 * y2 + z1 * z2 + w1 * w2;
   });
 
-
   test("vec clamp()", [&]{
     const auto vec = m::vec4(-5.0, 4.0, 19.0, 3.33);
     const auto vec_min = m::vec4(2.0, -3.0, 1.5, -7.0);
@@ -175,10 +174,14 @@ auto main() -> int{
   });
 
   test("vec3: cross product", [&]{
-    auto vec = m::vec3(1.0, 2.0, 3.0);
-    auto vec2 = m::vec3(98.0, 99.0, 100.0);
+    const auto v1 = m::vec3(1.0, 2.0, 3.0);
+    const auto v2 = m::vec3(98.0, 99.0, 100.0);
+    const auto v3 = m::cross(v1, v2);
 
-    return m::cross(vec, vec2) == m::vec3(-97.0, 194.0, -97.0);
+    return 
+      v3 == m::vec3(-97.0, 194.0, -97.0) &&
+      m::compare(m::dot(v1, v3), 0.0) &&
+      m::compare(m::dot(v2, v3), 0.0);
   });
 
   std::cout << "ALL TESTS PASSED\n";
