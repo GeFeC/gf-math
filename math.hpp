@@ -12,7 +12,7 @@ namespace gf::math{
 
 namespace detail{
 
-inline static constexpr auto NotSpecialized = false;
+inline constexpr auto NotSpecialized = false;
 
 template<typename T, typename... Targs>
 using all_same = std::enable_if_t<std::conjunction_v<std::is_same<T, Targs>...>>;
