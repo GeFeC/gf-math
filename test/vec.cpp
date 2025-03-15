@@ -127,6 +127,10 @@ auto main() -> int{
     return 10.0 / vec2 == expected;
   });
 
+  test("vec.as_vec", [&]{
+    return vec.as_vec<2>() == m::vec2(0.5, -0.5);
+  });
+
   vec = m::vec4(-2.0, 3.0, -5.0, 7.0);
   test("vec.len_squred()", [&]{
     return vec.len_squared() == 87.0;

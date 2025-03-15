@@ -214,6 +214,19 @@ struct vec : vec_props<T, N>{
     }
   }
 
+  template<std::size_t N2>
+  constexpr auto as_vec(const T& fill = T{}) const noexcept{
+    auto result = vec<T, N2>(fill);
+
+    constexpr auto MinIndex = N < N2 ? N : N2;
+
+    for (auto i : range(MinIndex)){
+      result[i] = (*this)[i];
+    }
+
+    return result;
+  }
+
   constexpr auto& operator[](std::size_t n) noexcept{
     return vec_props<T, N>::operator[](n);
   }

@@ -150,7 +150,7 @@ auto main() -> int{
     auto vec = m::vec4(0.0, 0.0, 0.0, 1.0);
 
     const auto translation = m::vec3(-2.0, 6.0, 4.0);
-    return m::translation(translation) * vec == m::vec4(-2.0, 6.0, 4.0, 1.0);
+    return m::translation(translation) * vec == translation.as_vec<4>(1.0);
   });
 
   test("vector scale", [&]{ 
