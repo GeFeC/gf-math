@@ -15,7 +15,9 @@ namespace detail{
 inline constexpr auto NotSpecialized = false;
 
 template<typename T, typename... Targs>
-using all_same = std::enable_if_t<std::conjunction_v<std::is_same<T, Targs>...>>;
+using all_convertible = std::enable_if_t<
+  std::conjunction_v<std::is_convertible<T, Targs>...>
+>;
 
 template<typename T>
 using arithmetic = std::enable_if_t<std::is_arithmetic_v<T>>;
@@ -202,15 +204,22 @@ struct vec : vec_props<T, N>{
     }
   }
 
-  constexpr vec(T value) noexcept{
+  explicit constexpr vec(T value) noexcept{
     for (auto i : range(N)){
       (*this)[i] = value;
     }
   }
 
-  constexpr vec(const array_type& array) noexcept{
+  explicit constexpr vec(const array_type& array) noexcept{
     for (auto i : range(N)){
       (*this)[i] = array[i];
+    }
+  }
+
+  template<typename T2, typename = detail::all_convertible<T, T2>>
+  explicit constexpr vec(const vec<T2, N>& other){
+    for (auto i : range(N)){
+      (*this)[i] = static_cast<T>(other[i]);
     }
   }
 
@@ -235,7 +244,7 @@ struct vec : vec_props<T, N>{
     return const_cast<vec*>(this)->operator[](n);
   }
 
-  template<typename... Targs, typename = detail::all_same<T, Targs...>>
+  template<typename... Targs, typename = detail::all_convertible<T, Targs...>>
   constexpr vec(const Targs&... args) noexcept 
   : vec_props<T, N>(args...) {}
 
@@ -368,7 +377,7 @@ inline constexpr auto operator*(const vec<T, N>& lhs, const vec<T, N>& rhs) noex
 
 template<typename T, std::size_t N>
 inline constexpr auto operator/(const vec<T, N>& lhs, const vec<T, N>& rhs) noexcept{
-  return lhs * (1.0 / rhs);
+  return lhs * (T(1) / rhs);
 }
 
 template<typename T, std::size_t N>
@@ -408,7 +417,7 @@ inline constexpr auto operator*(T x, const vec<T, N>& v) noexcept{
 
 template<typename T, std::size_t N>
 inline constexpr auto operator/(const vec<T, N>& v, T x) noexcept{
-  return v * (1.0 / x);
+  return v * (T(1) / x);
 }
 
 template<typename T, std::size_t N>
@@ -458,7 +467,14 @@ struct mat_base{
 
   constexpr mat_base() noexcept : data{} {}
 
-  template<typename... Targs, typename = detail::all_same<T, Targs...>>
+  template<typename T2, typename = detail::all_convertible<T, T2>>
+  explicit constexpr mat_base(const mat<T2, W, H>& other){
+    for (const auto& [x, y] : range({ W, H })){
+      (*this)[x][y] = static_cast<T>(other[x][y]);
+    }
+  }
+
+  template<typename... Targs, typename = detail::all_convertible<T, Targs...>>
   constexpr mat_base(const Targs&... args) noexcept{
     T array[] = { args... };
 
@@ -577,7 +593,11 @@ struct mat : mat_base<T, W, H>{
 
   constexpr mat() noexcept : mat_base<T, W, H>() {}
 
-  template<typename... Targs, typename = detail::all_same<T, Targs...>>
+  template<typename T2>
+  explicit constexpr mat(const mat<T2, W, H>& mat)
+  : mat_base<T, W, H>(mat) {}
+
+  template<typename... Targs, typename = detail::all_convertible<T, Targs...>>
   constexpr mat(const Targs&... args) noexcept 
   : mat_base<T, W, H>(args...) {}
 
@@ -623,9 +643,12 @@ struct mat<T, N, N> : mat_base<T, N, N>{
   }
 
   constexpr mat() noexcept : mat_base<T, N, N>() {}
+  template<typename T2>
+  explicit constexpr mat(const mat<T2, N, N>& mat)
+  : mat_base<T, N, N>(mat) {}
 
-  template<typename... Targs, typename = detail::all_same<T, Targs...>>
-  constexpr mat(Targs&&... args) noexcept 
+  template<typename... Targs, typename = detail::all_convertible<T, Targs...>>
+  constexpr mat(const Targs&... args) noexcept 
   : mat_base<T, N, N>(args...) {}
 
   constexpr mat(T value) noexcept : mat() {
@@ -636,6 +659,7 @@ struct mat<T, N, N> : mat_base<T, N, N>{
 
   constexpr auto diagonal_product() const noexcept{
     auto result = 1.0;
+
     for (auto i : range(N)){
       result *= this->data[i][i];
     }
@@ -684,15 +708,15 @@ struct mat<T, N, N> : mat_base<T, N, N>{
     auto sign = 1;
 
     for (auto x : range(N - 1)){
-      if (mat.is_any_row_zero() || mat.is_any_column_zero() || mat.is_diagonal_zero()) return 0.0;
+      if (mat.is_any_row_zero() || mat.is_any_column_zero() || mat.is_diagonal_zero()) return T();
 
       if (mat.is_triangular()){
         return sign * mat.diagonal_product();
       }
 
-      if (mat[x][x] == 0.0){
+      if (mat[x][x] == T()){
         for (auto y : range(N)){
-          if (mat[x][y] != 0.0 && mat[y][x] != 0.0){
+          if (mat[x][y] != T() && mat[y][x] != T()){
             sign = -sign;
             mat.swap_rows(x, y);
             break;
@@ -898,7 +922,7 @@ inline constexpr auto operator*(const mat<T, W, H>& mat, const vec<T, W>& vec) n
 
 template<typename T, std::size_t W, std::size_t H>
 inline constexpr auto operator/(const mat<T, W, H>& mat, T value) noexcept{
-  return mat * (1.0 / value);
+  return mat * (static_cast<T>(1.0) / value);
 }
 
 template<typename T, std::size_t W, std::size_t H>
@@ -910,17 +934,17 @@ inline constexpr auto operator/(T value, const mat<T, W, H>& mat) noexcept{
 
 template<typename T, std::size_t W, std::size_t H, std::size_t W2>
 inline constexpr auto operator/(const mat<T, W, H>& m1, const mat<T, W2, W>& m2) noexcept{
-  return m1 * (1.0 / m2);
+  return m1 * (static_cast<T>(1.0) / m2);
 }
 
 template<typename T, std::size_t W, std::size_t H>
 inline constexpr auto operator/(const vec<T, H>& vec, const mat<T, W, H>& mat) noexcept{
-  return vec * (1.0 / mat);
+  return vec * (static_cast<T>(1.0) / mat);
 }
 
 template<typename T, std::size_t W, std::size_t H>
 inline constexpr auto operator/(const mat<T, W, H>& mat, const vec<T, W>& vec) noexcept{
-  return mat * (1.0 / vec);
+  return mat * (static_cast<T>(1.0) / vec);
 }
 
 template<typename T, std::size_t N>
@@ -942,7 +966,7 @@ using imat4 = mat<std::int32_t, 4, 4>;
 
 template<typename T, std::size_t N>
 inline constexpr auto translation(const vec<T, N>& v) noexcept{
-  auto m = mat<T, N + 1, N + 1>(1.0);
+  auto m = mat<T, N + 1, N + 1>(static_cast<T>(1.0));
 
   for (auto i : range(N)){
     m[N][i] = v[i];
@@ -953,7 +977,7 @@ inline constexpr auto translation(const vec<T, N>& v) noexcept{
 
 template<typename T, std::size_t N>
 inline constexpr auto scale(const vec<T, N>& v) noexcept{
-  auto m = mat<T, N + 1, N + 1>(1.0);
+  auto m = mat<T, N + 1, N + 1>(static_cast<T>(1.0));
 
   for (auto i : range(N)){
     m[i][i] = v[i];
@@ -977,6 +1001,16 @@ inline constexpr auto rotation(T radians, const vec<T, N>& v) noexcept{
     y * x * (1 - cos) + z * sin, cos + y2 * (1 - cos), y * z * (1 - cos) - x * sin, 0.0, 
     z * z * (1 - cos) - y * sin, y * z * (1 - cos) + x * sin, cos + z2 * (1 - cos), 0.0,
     0.0, 0.0, 0.0, 1.0
+  );
+}
+
+template<typename T>
+inline constexpr auto perspective(T aspect_ratio, T fov, T z_near, T z_far){
+  return mat4(
+    aspect_ratio / std::tan(fov / 2.0), 0.0, 0.0, 0.0,
+    0.0, 1.0 / std::tan(fov / 2.0), 0.0, 0.0,
+    0.0, 0.0, z_far / (z_far - z_near), 1.0,
+    0.0, 0.0, -z_far * z_near / (z_far - z_near), 0.0
   );
 }
 
