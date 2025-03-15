@@ -3,5 +3,6 @@
 *.hpp
 !test/*.cpp
 !test/*.hpp
+!examples/*.cpp
 glm
 Makefile
