@@ -10,7 +10,7 @@ auto main() -> int{
 
   static_assert(sizeof(m::mat<double, 10, 10>) == sizeof(double) * 10 * 10);
 
-  test("mat: all operator implemented", []{
+  test("mat: all operators implemented", []{
     auto mat = m::mat4(0.0);
     auto vec = m::vec4(1.0, 2.0, 3.0, 4.0);
     auto x = 1.0;
@@ -135,8 +135,8 @@ auto main() -> int{
   });
 
   test("matrix clamp", [&]{
-    const auto mat_max = m::mat4().map([](auto){ return 25.0; });
-    const auto mat_min = m::mat4().map([](auto){ return 10.0; });
+    const auto mat_min = m::mat4::filled(10.0);
+    const auto mat_max = m::mat4::filled(25.0);
     
     return m::clamp(mat, mat_min, mat_max) == m::mat4(
       10.0, 10.0, 10.0, 10.0,
@@ -210,7 +210,7 @@ auto main() -> int{
       4.0, 2.0, 1.0, 3.0
     );
 
-    auto mat3 = m::mat4(0.0).map([](auto){ return 1.0; });
+    auto mat3 = m::mat4::filled(1.0);
     mat3[0][0] = 0;
     mat3[1][1] = 0;
     mat3[2][2] = 0;

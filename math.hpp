@@ -605,6 +605,10 @@ template<typename T, std::size_t N>
 struct mat<T, N, N> : mat_base<T, N, N>{
   using value_type = T;
 
+  static constexpr auto filled(const T& value){
+    return mat().map([&](auto){ return value; });
+  }
+
   constexpr mat() noexcept : mat_base<T, N, N>() {}
 
   template<typename... Targs, typename = detail::all_same<T, Targs...>>
