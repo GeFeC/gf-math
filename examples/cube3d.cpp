@@ -3,10 +3,16 @@
 #include <iostream>
 #include <string>
 #include <utility>
+#include <algorithm>
 #include <thread>
 #include <vector>
 
 namespace m = gf::math;
+
+static constexpr auto PixelWhite = "\u2588\u2588";
+static constexpr auto PixelLightGray = "\u2593\u2593";
+static constexpr auto PixelGray = "\u2592\u2592";
+static constexpr auto PixelDark = "\u2591\u2591";
 
 struct Renderer{
 private:
@@ -15,6 +21,11 @@ private:
   char null;
 
 public:
+  bool debug = false;
+  m::mat4 model = m::mat4(1.0);
+  m::mat4 view = m::mat4(1.0);
+  m::mat4 projection = m::mat4(1.0);
+
   Renderer(int width, int height) : width(width), height(height){
     buffer.resize(width * height, ' ');
   }
@@ -43,8 +54,19 @@ public:
   auto render_buffer(){
     for (int y = 0; y < height; ++y){
       for (int x = 0; x < width; ++x){
-        if (at(m::ivec2(x, y)) != ' '){
-          std::cout << "\u2588\u2588";
+        const auto pixel = at(m::ivec2(x, y));
+
+        if (pixel == '0'){
+          std::cout << PixelWhite;
+        }
+        else if (pixel == '1'){
+          std::cout << PixelLightGray;
+        }
+        else if (pixel == '2'){
+          std::cout << PixelGray;
+        }
+        else if (pixel == '3'){
+          std::cout << PixelDark;
         }
         else std::cout << "  ";
       }
@@ -56,102 +78,184 @@ public:
     const auto center = size() / 2;
 
     auto position = center + m::ivec2(
-      std::round(center.x * point.x),
-      std::round(center.y * point.y)
+      m::round(m::vec2(center) * point)
     );
 
     at(position) = '@';
   }
 
-inline auto draw_line(
-  const m::vec2& p1, 
-  const m::vec2& p2
-){
-  auto origin = m::ivec2(
-    (p1 + 1.0) * m::vec2(width, height) / 2.0
-  );
+  auto make_line(const m::vec2& p1, const m::vec2& p2){
+    auto points = std::vector<m::ivec2>();
 
-  auto target = m::ivec2(
-    (p2 + 1.0) * m::vec2(width, height) / 2.0
-  );
+    auto origin = m::ivec2(
+      (p1 + 1.0) * m::vec2(width, height) / 2.0
+    );
 
-  if (origin.x > target.x) std::swap(origin, target);
+    auto target = m::ivec2(
+      (p2 + 1.0) * m::vec2(width, height) / 2.0
+    );
 
-  at(origin) = '@';
-  at(target) = '@';
+    if (origin.x > target.x) std::swap(origin, target);
 
-  const auto [width, height] = m::abs(origin - target);
-  const auto ratio = std::abs(static_cast<float>(width) / height);
+    const auto [width, height] = m::abs(origin - target);
+    const auto ratio = std::abs(static_cast<float>(width) / height);
 
-  const auto direction = origin.y < target.y ? 1 : -1;
+    const auto direction = origin.y < target.y ? 1 : -1;
 
-  if (ratio > 1.0){
-    for (int i = 0; i != width; i++){
-      at(origin + m::ivec2(i, static_cast<int>(i / ratio) * direction)) = '@';
+    if (ratio > 1.0){
+      for (int i = 0; i != width; i++){
+        points.push_back(origin + m::ivec2(i, static_cast<int>(i / ratio) * direction));
+      }
+    }
+    else{
+      for (int i = 0; i != height * direction; i += direction){
+        points.push_back(origin + m::ivec2(static_cast<int>(i * ratio) * direction, i));
+      }
+    }
+
+    points.push_back(target);
+
+    return points;
+  }
+
+  auto project_point(const m::vec3& point){
+    const auto projected_vec4 = projection * view * model * point.as_vec<4>(1.0);
+    return projected_vec4.as_vec<2>() / projected_vec4.w;
+  }
+
+  auto draw_line(const m::vec2& p1, const m::vec2& p2){
+    for (const auto& point : make_line(p1, p2)){
+      at(point) = '@';
     }
   }
-  else{
-    for (int i = 0; i != height * direction; i += direction){
-      at(origin + m::ivec2(static_cast<int>(i * ratio) * direction, i)) = '@';
-    }
-  }
-}
 
+  auto draw_triangle(
+    const m::vec3& p1,
+    const m::vec3& p2,
+    const m::vec3& p3
+  ){
+    const auto v1 = model * (p1 - p2).as_vec<4>(1.0);
+    const auto v2 = model * (p1 - p3).as_vec<4>(1.0);
+    const auto normal = m::cross(v1.as_vec<3>(), v2.as_vec<3>());
+
+    if (normal.z < 0.0) return;
+
+    const auto projected = std::array{
+      project_point(p1),
+      project_point(p2),
+      project_point(p3)
+    };
+
+    const auto l1 = make_line(projected[0], projected[1]);
+    const auto l2 = make_line(projected[1], projected[2]);
+    const auto l3 = make_line(projected[2], projected[0]);
+
+    auto fill = std::unordered_map<double, std::vector<int>>();
+
+    for (auto [x, y] : l1){
+      fill[y].push_back(x);
+    }
+
+    for (auto [x, y] : l2){
+      fill[y].push_back(x);
+    }
+
+    for (auto [x, y] : l3){
+      fill[y].push_back(x);
+    }
+
+    const auto camera = m::vec3(0.0, 0.0, 1.0);
+    const auto shade_color = m::dot(camera, normal.normalized());
+
+    auto pixel = '0';
+    if (shade_color < 0.75) pixel = '1';
+    if (shade_color < 0.50) pixel = '2';
+    if (shade_color < 0.25) pixel = '3';
+
+    for (auto y : m::range(height)){
+      if (fill.find(y) == fill.end()) continue;
+      const auto& row = fill[y];
+
+      const auto [fill_from, fill_to] = std::minmax_element(row.begin(), row.end());
+
+      for (auto i : m::range(*fill_from, *fill_to)){
+        at(m::ivec2(i, y)) = pixel;
+      }
+    }
+
+  }
 };
 
 auto main() -> int{
-  auto renderer = Renderer(50, 50);
   using namespace std::chrono_literals;
 
+  std::cout << "Screen size: ";
+  auto size = 0;
+  std::cin >> size;
+
+  auto renderer = Renderer(size, size);
   auto angle = 0.0;
   for (;;){
-    angle += 0.1;
     std::system("clear");
     renderer.clear();
 
-    const auto cube_front = std::vector{
-      m::vec3(-0.5, -0.5, 0.5),
-      m::vec3(0.5, -0.5, 0.5),
-      m::vec3(0.5, 0.5, 0.5),
-      m::vec3(-0.5, 0.5, 0.5)
+    angle += 0.1;
+
+    const auto sides = std::array{
+      std::array{ //FRONT
+        m::vec3(-0.5, -0.5, 0.5),
+        m::vec3(0.5, -0.5, 0.5),
+        m::vec3(0.5, 0.5, 0.5),
+        m::vec3(-0.5, 0.5, 0.5)
+      },
+      std::array{ //BACK
+        m::vec3(-0.5, 0.5, -0.5),
+        m::vec3(0.5, 0.5, -0.5),
+        m::vec3(0.5, -0.5, -0.5),
+        m::vec3(-0.5, -0.5, -0.5)
+      },
+      std::array{ //LEFT
+        m::vec3(-0.5, 0.5, 0.5),
+        m::vec3(-0.5, 0.5, -0.5),
+        m::vec3(-0.5, -0.5, -0.5),
+        m::vec3(-0.5, -0.5, 0.5)
+      },
+      std::array{ //RIGHT
+        m::vec3(0.5, -0.5, 0.5),
+        m::vec3(0.5, -0.5, -0.5),
+        m::vec3(0.5, 0.5, -0.5),
+        m::vec3(0.5, 0.5, 0.5)
+      },
+      std::array{ //TOP
+        m::vec3(-0.5, -0.5, -0.5),
+        m::vec3(0.5, -0.5, -0.5),
+        m::vec3(0.5, -0.5, 0.5),
+        m::vec3(-0.5, -0.5, 0.5)
+      },
+      std::array{ //BOTTOM
+        m::vec3(-0.5, 0.5, 0.5),
+        m::vec3(0.5, 0.5, 0.5),
+        m::vec3(0.5, 0.5, -0.5),
+        m::vec3(-0.5, 0.5, -0.5)
+      },
     };
 
-    const auto cube_back = std::vector{
-      m::vec3(-0.5, -0.5, -0.5),
-      m::vec3(0.5, -0.5, -0.5),
-      m::vec3(0.5, 0.5, -0.5),
-      m::vec3(-0.5, 0.5, -0.5)
-    };
+    renderer.model = m::rotation(angle, m::vec3(0.0, 3.0, 1.0));
+    renderer.view = m::translation(m::vec3(0.0, 0.0, 10.0));
+    renderer.projection = m::perspective(1.0, m::pi / 2.0, 0.1, 1000.0);
 
-    const auto model = m::rotation(angle, m::vec3(0.0, 3.0, 1.0));
-    const auto view = m::translation(m::vec3(0.0, 0.0, 10.0));
-    const auto projection = m::perspective(1.0, m::pi / 2.0, 0.1, 10000.0);
-    const auto mvp = projection * view * model;
+    for (auto i : m::range(sides.size())){
+      const auto& side = sides[i];
 
-    const auto render_line = [&](const m::vec3& v1, const m::vec3& v2){
-      const auto v1_projected = mvp * v1.as_vec<4>(1.0);
-      const auto v2_projected = mvp * v2.as_vec<4>(1.0);
-
-      const auto v1_projected_2d = v1_projected.as_vec<2>() / v1_projected.w;
-      const auto v2_projected_2d = v2_projected.as_vec<2>() / v2_projected.w;
-
-      renderer.draw_line(v1_projected_2d, v2_projected_2d);
-    };
-
-    for (auto i : m::range(3)){
-      render_line(cube_front[i], cube_front[i + 1]);
-      render_line(cube_back[i], cube_back[i + 1]);
+      renderer.draw_triangle(side[0], side[1], side[2]);
+      renderer.draw_triangle(side[2], side[3], side[0]);
     }
-
-    for (auto i : m::range(4)){
-      render_line(cube_front[i], cube_back[i]);
-    }
-
-    render_line(cube_front[0], cube_front[3]);
-    render_line(cube_back[0], cube_back[3]);
 
     renderer.render_buffer();
-    std::this_thread::sleep_for(50ms);
+
+    std::this_thread::sleep_for(20ms);
+
+    if (angle > m::pi * 2.0) angle -= m::pi * 2.0;
   }
 }
 
