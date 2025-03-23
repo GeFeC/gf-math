@@ -138,7 +138,8 @@ public:
     const auto v2 = model * (p1 - p3).as_vec<4>(1.0);
     const auto normal = m::cross(v1.as_vec<3>(), v2.as_vec<3>());
 
-    if (normal.z < 0.0) return;
+    const auto point_3d = view * model * p1.as_vec<4>(1.0);
+    if (m::dot(point_3d.as_vec<3>(), normal) > 0.0) return;
 
     const auto projected = std::array{
       project_point(p1),
@@ -165,7 +166,7 @@ public:
     }
 
     const auto camera = m::vec3(0.0, 0.0, 1.0);
-    const auto shade_color = m::dot(camera, normal.normalized());
+    const auto shade_color = m::abs(m::dot(camera, normal.normalized()));
 
     auto pixel = '0';
     if (shade_color < 0.75) pixel = '1';
@@ -195,11 +196,13 @@ auto main() -> int{
 
   auto renderer = Renderer(size, size);
   auto angle = 0.0;
+  auto z = 10.0;
   for (;;){
     std::system("clear");
     renderer.clear();
 
     angle += 0.1;
+    //z += 0.1;
 
     const auto sides = std::array{
       std::array{ //FRONT
@@ -240,8 +243,8 @@ auto main() -> int{
       },
     };
 
-    renderer.model = m::rotation(angle, m::vec3(0.0, 3.0, 1.0));
-    renderer.view = m::translation(m::vec3(0.0, 0.0, 10.0));
+    renderer.model = m::rotation(angle, m::vec3(0.0, -3.0, 1.0));
+    renderer.view = m::translation(m::vec3(0.0, 0.0, z));
     renderer.projection = m::perspective(1.0, m::pi / 2.0, 0.1, 1000.0);
 
     for (auto i : m::range(sides.size())){
