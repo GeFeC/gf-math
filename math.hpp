@@ -54,11 +54,11 @@ struct range_base{
     }
   };
 
-  auto begin() const noexcept{
+  constexpr auto begin() const noexcept{
     return iterator{ min };
   }
 
-  auto end() const noexcept{
+  constexpr auto end() const noexcept{
     return iterator{ max };
   }
 };
@@ -223,9 +223,9 @@ struct vec : vec_props<T, N>{
     }
   }
 
-  template<std::size_t N2>
-  constexpr auto as_vec(const T& fill = T{}) const noexcept{
-    auto result = vec<T, N2>(fill);
+  template<std::size_t N2, typename T2>
+  constexpr auto as_vec(const T2& fill) const noexcept{
+    auto result = vec<T2, N2>(fill);
 
     constexpr auto MinIndex = N < N2 ? N : N2;
 
@@ -286,7 +286,7 @@ struct vec : vec_props<T, N>{
   }
 
   constexpr auto normalized() const noexcept{
-    return vec<T, N>((*this / len()));
+    return vec<T, N>((*this / static_cast<T>(len())));
   }
 
   constexpr auto& operator+=(const vec& other) noexcept{
@@ -449,16 +449,21 @@ inline constexpr auto cross(const vec<T, 3>& v1, const vec<T, 3>& v2) noexcept{
   );
 }
 
-using vec2 = vec<double, 2>;
-using fvec2 = vec<float, 2>;
+template<typename T, std::size_t N>
+inline constexpr auto center(const vec<T, N>& outer, const vec<T, N>& inner) noexcept{
+  return outer / T(2) - inner / T(2);
+}
+
+using vec2 = vec<float, 2>;
+using dvec2 = vec<double, 2>;
 using ivec2 = vec<std::int32_t, 2>;
 
-using vec3 = vec<double, 3>;
-using fvec3 = vec<float, 3>;
+using vec3 = vec<float, 3>;
+using dvec3 = vec<double, 3>;
 using ivec3 = vec<std::int32_t, 3>;
 
-using vec4 = vec<double, 4>;
-using fvec4 = vec<float, 4>;
+using vec4 = vec<float, 4>;
+using dvec4 = vec<double, 4>;
 using ivec4 = vec<std::int32_t, 4>;
 
 template<typename T, std::size_t W, std::size_t H>
@@ -966,11 +971,14 @@ constexpr auto vec<T, N>::operator/=(const mat<T, N, N>& mat) noexcept -> vec&{
   return (*this) = (*this) * mat;
 }
 
-using mat2 = mat<double, 2, 2>;
+using mat2 = mat<float, 2, 2>;
+using dmat2 = mat<double, 2, 2>;
 using imat2 = mat<std::int32_t, 2, 2>;
-using mat3 = mat<double, 3, 3>;
+using mat3 = mat<float, 3, 3>;
+using dmat3 = mat<double, 3, 3>;
 using imat3 = mat<std::int32_t, 3, 3>;
-using mat4 = mat<double, 4, 4>;
+using mat4 = mat<float, 4, 4>;
+using dmat4 = mat<double, 4, 4>;
 using imat4 = mat<std::int32_t, 4, 4>;
 
 template<typename T, std::size_t N>
@@ -1006,20 +1014,45 @@ inline constexpr auto rotation(T radians, const vec<T, N>& v) noexcept{
   const auto cos = std::cos(radians);
 
   return mat<T, N + 1, N + 1>(
-    cos + x2 * (1 - cos), x * y * (1 - cos) - z * sin, x * z * (1 - cos) + y * sin, 0.0, 
-    y * x * (1 - cos) + z * sin, cos + y2 * (1 - cos), y * z * (1 - cos) - x * sin, 0.0, 
-    z * z * (1 - cos) - y * sin, y * z * (1 - cos) + x * sin, cos + z2 * (1 - cos), 0.0,
-    0.0, 0.0, 0.0, 1.0
-  );
+    cos + x2 * (1 - cos), x * y * (1 - cos) - z * sin, x * z * (1 - cos) + y * sin, 0.f, 
+    y * x * (1 - cos) + z * sin, cos + y2 * (1 - cos), y * z * (1 - cos) - x * sin, 0.f, 
+    z * z * (1 - cos) - y * sin, y * z * (1 - cos) + x * sin, cos + z2 * (1 - cos), 0.f,
+    0.f, 0.f, 0.f, 1.f
+  ).t();
+}
+
+template<typename T>
+inline constexpr auto rotation_x(T radians) noexcept{
+  return rotation(radians, math::vec3(1.f, 0.f, 0.f));
+}
+
+template<typename T>
+inline constexpr auto rotation_y(T radians) noexcept{
+  return rotation(radians, math::vec3(0.f, 1.f, 0.f));
+}
+
+template<typename T>
+inline constexpr auto rotation_z(T radians) noexcept{
+  return rotation(radians, math::vec3(0.f, 0.f, 1.f));
 }
 
 template<typename T>
 inline constexpr auto perspective(T aspect_ratio, T fov, T z_near, T z_far){
-  return mat4(
-    aspect_ratio / std::tan(fov / 2.0), 0.0, 0.0, 0.0,
-    0.0, 1.0 / std::tan(fov / 2.0), 0.0, 0.0,
-    0.0, 0.0, z_far / (z_far - z_near), 1.0,
-    0.0, 0.0, -z_far * z_near / (z_far - z_near), 0.0
+  return mat<T, 4, 4>(
+    aspect_ratio / std::tan(fov / 2.f), 0.f, 0.f, 0.f,
+    0.f, 1.f / std::tan(fov / 2.f), 0.f, 0.f,
+    0.f, 0.f, z_far / (z_far - z_near), 1.f,
+    0.f, 0.f, -z_far * z_near / (z_far - z_near), 0.f
+  );
+}
+
+template<typename T>
+inline constexpr auto ortho(T left, T right, T top, T bottom, T z_near, T z_far){
+  return mat<T, 4, 4>(
+    2.f / (right - left), 0.f, 0.f, -(right + left) / (right - left),
+    0.f, 2.f / (top - bottom), 0.f, -(bottom + top) / (top - bottom),
+    0.f, 0.f, -2.f / (z_far - z_near), -(z_far - z_near) / (z_far - z_near),
+    0.f, 0.f, 0.f, 1.f
   );
 }
 

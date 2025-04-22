@@ -1,3 +1,5 @@
+//WORKS UNDER LINUX ONLY!!!
+
 #define GEFEC_MATH_DEBUG
 #include "../math.hpp"
 #include <iostream>
@@ -22,9 +24,9 @@ private:
 
 public:
   bool debug = false;
-  m::mat4 model = m::mat4(1.0);
-  m::mat4 view = m::mat4(1.0);
-  m::mat4 projection = m::mat4(1.0);
+  m::mat4 model = m::mat4(1.f);
+  m::mat4 view = m::mat4(1.f);
+  m::mat4 projection = m::mat4(1.f);
 
   Renderer(int width, int height) : width(width), height(height){
     buffer.resize(width * height, ' ');
@@ -88,11 +90,11 @@ public:
     auto points = std::vector<m::ivec2>();
 
     auto origin = m::ivec2(
-      (p1 + 1.0) * m::vec2(width, height) / 2.0
+      (p1 + 1.f) * m::vec2(width, height) / 2.f
     );
 
     auto target = m::ivec2(
-      (p2 + 1.0) * m::vec2(width, height) / 2.0
+      (p2 + 1.f) * m::vec2(width, height) / 2.f
     );
 
     if (origin.x > target.x) std::swap(origin, target);
@@ -119,8 +121,8 @@ public:
   }
 
   auto project_point(const m::vec3& point){
-    const auto projected_vec4 = projection * view * model * point.as_vec<4>(1.0);
-    return projected_vec4.as_vec<2>() / projected_vec4.w;
+    const auto projected_vec4 = projection * view * model * point.as_vec<4>(1.f);
+    return projected_vec4.as_vec<2>(0.f) / projected_vec4.w;
   }
 
   auto draw_line(const m::vec2& p1, const m::vec2& p2){
@@ -134,12 +136,12 @@ public:
     const m::vec3& p2,
     const m::vec3& p3
   ){
-    const auto v1 = model * (p1 - p2).as_vec<4>(1.0);
-    const auto v2 = model * (p1 - p3).as_vec<4>(1.0);
-    const auto normal = m::cross(v1.as_vec<3>(), v2.as_vec<3>());
+    const auto v1 = model * (p1 - p2).as_vec<4>(1.f);
+    const auto v2 = model * (p1 - p3).as_vec<4>(1.f);
+    const auto normal = m::cross(v1.as_vec<3>(0.f), v2.as_vec<3>(0.f));
 
-    const auto point_3d = view * model * p1.as_vec<4>(1.0);
-    if (m::dot(point_3d.as_vec<3>(), normal) > 0.0) return;
+    const auto point_3d = view * model * p1.as_vec<4>(1.f);
+    if (m::dot(point_3d.as_vec<3>(0.f), normal) > 0.f) return;
 
     const auto projected = std::array{
       project_point(p1),
@@ -195,8 +197,8 @@ auto main() -> int{
   std::cin >> size;
 
   auto renderer = Renderer(size, size);
-  auto angle = 0.0;
-  auto z = 10.0;
+  auto angle = 0.f;
+  auto z = 10.f;
   for (;;){
     std::system("clear");
     renderer.clear();
@@ -243,8 +245,8 @@ auto main() -> int{
       },
     };
 
-    renderer.model = m::rotation(angle, m::vec3(0.0, -3.0, 1.0));
-    renderer.view = m::translation(m::vec3(0.0, 0.0, z));
+    renderer.model = m::rotation(angle, m::vec3(0.f, -3.f, 1.f));
+    renderer.view = m::translation(m::vec3(0.f, 0.f, z));
     renderer.projection = m::perspective(1.0, m::pi / 2.0, 0.1, 1000.0);
 
     for (auto i : m::range(sides.size())){
