@@ -11,9 +11,9 @@ auto main() -> int{
   static_assert(sizeof(m::mat<double, 10, 10>) == sizeof(double) * 10 * 10);
 
   test("mat: all operators implemented", []{
-    auto mat = m::mat4(0.0);
+    auto mat = m::mat4(0.f);
     auto vec = m::vec4(1.0, 2.0, 3.0, 4.0);
-    auto x = 1.0;
+    auto x = 1.f;
 
     mat = mat;
 
@@ -54,21 +54,21 @@ auto main() -> int{
   });
 
   auto mat = m::mat4(
-    2.0, 3.0, 5.0, 7.0,
-    11.0, 13.0, 17.0, 19.0,
-    23.0, 29.0, 31.0, 37.0,
-    41.0, 43.0, 47.0, 53.0
+    2.f, 3.f, 5.f, 7.f,
+    11.f, 13.f, 17.f, 19.f,
+    23.f, 29.f, 31.f, 37.f,
+    41.f, 43.f, 47.f, 53.f
   );
 
   auto mat_copy = m::mat4(
-    2.0, 3.0, 5.0, 7.0,
-    11.0, 13.0, 17.0, 19.0,
-    23.0, 29.0, 31.0, 37.0,
-    41.0, 43.0, 47.0, 53.0
+    2.f, 3.f, 5.f, 7.f,
+    11.f, 13.f, 17.f, 19.f,
+    23.f, 29.f, 31.f, 37.f,
+    41.f, 43.f, 47.f, 53.f
   );
 
   test("matrix default init", []{
-    return m::mat4() == m::mat4(0.0);
+    return m::mat4() == m::mat4(0.f);
   });
 
   test("matrix-matrix comparison", [&]{
@@ -82,10 +82,10 @@ auto main() -> int{
 
   test("matrix transposition", [&]{ 
     return mat.t() == m::mat4(
-      2.0, 11.0, 23.0, 41.0,
-      3.0, 13.0, 29.0, 43.0,
-      5.0, 17.0, 31.0, 47.0,
-      7.0, 19.0, 37.0, 53.0
+      2.f, 11.f, 23.f, 41.f,
+      3.f, 13.f, 29.f, 43.f,
+      5.f, 17.f, 31.f, 47.f,
+      7.f, 19.f, 37.f, 53.f
     );
   });
 
@@ -95,10 +95,10 @@ auto main() -> int{
 
   test("matrix + matrix", [&]{
     return mat + mat.t() == m::mat4(
-      4.0, 14.0, 28.0, 48.0,
-      14.0, 26.0, 46.0, 62.0,
-      28.0, 46.0, 62.0, 84.0,
-      48.0, 62.0, 84.0, 106.0
+      4.f, 14.f, 28.f, 48.f,
+      14.f, 26.f, 46.f, 62.f,
+      28.f, 46.f, 62.f, 84.f,
+      48.f, 62.f, 84.f, 106.f
     );
   });
 
@@ -115,23 +115,23 @@ auto main() -> int{
   });
 
   test("identity * mat = mat", [&]{
-    return mat == m::mat4(1.0) * mat;
+    return mat == m::mat4(1.f) * mat;
   });
 
-  const auto mat1x4 = m::mat<double, 1, 4>(1.0, 6.0, 28.0, 496.0);
+  const auto mat1x4 = m::mat<float, 1, 4>(1.f, 6.f, 28.f, 496.f);
 
   test("mat4x4 * mat1x4", [&]{
-    return mat * mat1x4 == m::mat<double, 1, 4>(
-      2.0 * 1.0 + 3.0 * 6.0 + 5.0 * 28.0 + 7.0 * 496.0,
-      11.0 * 1.0 + 13.0 * 6.0 + 17.0 * 28.0 + 19.0 * 496.0,
-      23.0 * 1.0 + 29.0 * 6.0 + 31.0 * 28.0 + 37.0 * 496.0,
-      41.0 * 1.0 + 43.0 * 6.0 + 47.0 * 28.0 + 53.0 * 496.0
+    return mat * mat1x4 == m::mat<float, 1, 4>(
+      2.f * 1.f + 3.f * 6.f + 5.f * 28.f + 7.f * 496.f,
+      11.f * 1.f + 13.f * 6.f + 17.f * 28.f + 19.f * 496.f,
+      23.f * 1.f + 29.f * 6.f + 31.f * 28.f + 37.f * 496.f,
+      41.f * 1.f + 43.f * 6.f + 47.f * 28.f + 53.f * 496.f
     );
   });
 
   test("vec4 * mat1x4", [&]{
     auto vec = m::vec4(1.0, 2.0, 3.0, 4.0);
-    return vec * mat1x4 == m::vec<double, 1>(1.0 + 12.0 + 3 * 28.0 + 4.0 * 496.0);
+    return vec * mat1x4 == m::vec<float, 1>(1.f + 12.f + 3 * 28.f + 4.f * 496.f);
   });
 
   test("matrix clamp", [&]{
@@ -139,10 +139,10 @@ auto main() -> int{
     const auto mat_max = m::mat4::filled(25.0);
     
     return m::clamp(mat, mat_min, mat_max) == m::mat4(
-      10.0, 10.0, 10.0, 10.0,
-      11.0, 13.0, 17.0, 19.0,
-      23.0, 25.0, 25.0, 25.0,
-      25.0, 25.0, 25.0, 25.0
+      10.f, 10.f, 10.f, 10.f,
+      11.f, 13.f, 17.f, 19.f,
+      23.f, 25.f, 25.f, 25.f,
+      25.f, 25.f, 25.f, 25.f
     );
   });
 
@@ -150,7 +150,7 @@ auto main() -> int{
     auto vec = m::vec4(0.0, 0.0, 0.0, 1.0);
 
     const auto translation = m::vec3(-2.0, 6.0, 4.0);
-    return m::translation(translation) * vec == translation.as_vec<4>(1.0);
+    return m::translation(translation) * vec == translation.as_vec<4>(1.f);
   });
 
   test("vector scale", [&]{ 
@@ -165,23 +165,23 @@ auto main() -> int{
 
   test("vector rotation", [&]{
     auto vec = m::vec4(0.0, 1.0, 0.0, 1.0);
-    const auto rotation = m::rotation(m::pi / 2.0, m::vec3(0.0, 0.0, 1.0)) * vec;
+    const auto rotation = m::rotation<float>(m::pi / 2.f, m::vec3(0.0, 0.0, 1.0)) * vec;
 
-    return m::compare(rotation, m::vec4(-1.0, 0.0, 0.0, 1.0));
+    return m::compare<float>(rotation, m::vec4(1.0, 0.0, 0.0, 1.0));
   });
 
   mat = m::mat4(
-    1.0, 0.0, 0.0, 0.0,
-    1.0, 1.0, 0.0, 0.0,
-    1.0, 1.0, 1.0, 0.0,
-    1.0, 1.0, 1.0, 1.0
+    1.f, 0.f, 0.f, 0.f,
+    1.f, 1.f, 0.f, 0.f,
+    1.f, 1.f, 1.f, 0.f,
+    1.f, 1.f, 1.f, 1.f
   );
 
   auto mat2 = m::mat4(
-    1.0, 1.0, 1.0, 1.0,
-    0.0, 1.0, 1.0, 1.0,
-    0.0, 0.0, 1.0, 1.0,
-    0.0, 0.0, 0.0, 1.0
+    1.f, 1.f, 1.f, 1.f,
+    0.f, 1.f, 1.f, 1.f,
+    0.f, 0.f, 1.f, 1.f,
+    0.f, 0.f, 0.f, 1.f
   );
 
   test("mat.is_lower_triangular()", [&]{
@@ -197,17 +197,17 @@ auto main() -> int{
   });
 
   test("identity matrix is diagonal", [&]{
-    return m::mat4(1.0).is_diagonal();
+    return m::mat4(1.f).is_diagonal();
   });
 
   test("mat.det()", [&]{
-    auto mat1 = m::mat4(0.0).map([i = 0.0](auto) mutable { return ++i; });
+    auto mat1 = m::mat4(0.f).map([i = 0.0](auto) mutable { return ++i; });
 
     auto mat2 = m::mat4(
-      2.0, 3.0, 1.0, 4.0,
-      0.0, 1.0, 5.0, 2.0,
-      1.0, 0.0, 3.0, 1.0,
-      4.0, 2.0, 1.0, 3.0
+      2.f, 3.f, 1.f, 4.f,
+      0.f, 1.f, 5.f, 2.f,
+      1.f, 0.f, 3.f, 1.f,
+      4.f, 2.f, 1.f, 3.f
     );
 
     auto mat3 = m::mat4::filled(1.0);
@@ -217,45 +217,45 @@ auto main() -> int{
     mat3[3][3] = 0;
 
     auto mat4 = m::mat4(
-      0.0, 0.0, 3.0, 4.0,
-      0.0, 0.0, 2.0, 2.0,
-      4.0, 3.0, 2.0, 1.0,
-      2.0, 2.0, 2.0, 4.0
+      0.f, 0.f, 3.f, 4.f,
+      0.f, 0.f, 2.f, 2.f,
+      4.f, 3.f, 2.f, 1.f,
+      2.f, 2.f, 2.f, 4.f
     );
 
     auto mat5 = m::mat4(
-      0.0, 0.0, 0.0, 1.0,
-      0.0, 0.0, 1.0, 1.0,
-      0.0, 1.0, 1.0, 1.0,
-      1.0, 1.0, 1.0, 1.0
+      0.f, 0.f, 0.f, 1.f,
+      0.f, 0.f, 1.f, 1.f,
+      0.f, 1.f, 1.f, 1.f,
+      1.f, 1.f, 1.f, 1.f
     );
 
     auto mat6 = m::mat4(
-      1.0, 0.0, 0.0, 0.0,
-      1.0, 1.0, 0.0, 0.0,
-      1.0, 1.0, 1.0, 0.0,
-      1.0, 1.0, 1.0, 1.0
+      1.f, 0.f, 0.f, 0.f,
+      1.f, 1.f, 0.f, 0.f,
+      1.f, 1.f, 1.f, 0.f,
+      1.f, 1.f, 1.f, 1.f
     );
 
     auto mat7 = m::mat4(
-      1.0, 1.0, 1.0, 1.0,
-      1.0, 1.0, 1.0, 0.0,
-      1.0, 1.0, 0.0, 0.0,
-      1.0, 0.0, 0.0, 0.0
+      1.f, 1.f, 1.f, 1.f,
+      1.f, 1.f, 1.f, 0.f,
+      1.f, 1.f, 0.f, 0.f,
+      1.f, 0.f, 0.f, 0.f
     );
 
     auto mat8 = m::mat4(
-      0.0, 0.0, 0.0, 3.0,
-      0.0, 0.0, 0.0, 2.0,
-      0.0, 0.0, 0.0, 1.0,
-      1.0, 2.0, 3.0, 4.0
+      0.f, 0.f, 0.f, 3.f,
+      0.f, 0.f, 0.f, 2.f,
+      0.f, 0.f, 0.f, 1.f,
+      1.f, 2.f, 3.f, 4.f
     );
 
     return 
-      m::mat4(0.0).det() == 0.0 &&
-      m::mat4(1.0).det() == 1.0 &&
-      mat1.det() == 0.0 && 
-      m::round(mat2.det()) == -16.0 &&
+      m::mat4(0.f).det() == 0.f &&
+      m::mat4(1.f).det() == 1.f &&
+      mat1.det() == 0.f && 
+      m::round(mat2.det()) == -16.f &&
       m::round(mat2.t().det()) == -16.0 &&
       mat3.det() == 0.0 &&
       m::round(mat4.det()) == -4.0 &&

@@ -576,7 +576,7 @@ struct mat_base{
 
   constexpr auto is_any_row_zero() const noexcept{
     for (auto i : range(W)){
-      if (row(i) != vec<T, W>(0.0)) return false;
+      if (row(i) != vec<T, W>(static_cast<T>(0))) return false;
     }
 
     return true;
@@ -584,7 +584,7 @@ struct mat_base{
 
   constexpr auto is_any_column_zero() const noexcept{
     for (auto i : range(H)){
-      if (col(i) != vec<T, H>(0.0)) return false;
+      if (col(i) != vec<T, H>(static_cast<T>(0))) return false;
     }
 
     return true;
