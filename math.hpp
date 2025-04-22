@@ -1201,13 +1201,13 @@ inline constexpr auto floor(const T& x) noexcept{
 //CEIL:
 template<typename T, typename = detail::arithmetic<T>>
 inline constexpr auto ceil(T x) noexcept{
-  return std::floor(x);
+  return std::ceil(x);
 }
 
 template<typename T, typename = detail::not_arithmetic<T>>
 inline constexpr auto ceil(const T& x) noexcept{
   return x.map([](const auto& e){
-    return math::floor(e);
+    return math::ceil(e);
   });
 }
 
